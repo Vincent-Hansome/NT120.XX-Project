@@ -1,0 +1,21 @@
+<section class="page admin-page" data-admin-products>
+  <span class="eyebrow">MỘC / QUẢN TRỊ</span>
+  <h1>Sản phẩm<em>.</em></h1>
+  <p class="admin-intro">Danh sách sản phẩm được tải trực tiếp từ API. Các thao tác ghi cần quyền admin.</p>
+  <div class="admin-product-actions"><button class="button button-dark" type="button" data-toggle-product-form aria-expanded="false" aria-controls="admin-product-form">＋ Thêm sản phẩm</button></div>
+  <form class="admin-product-form" id="admin-product-form" data-product-form hidden enctype="multipart/form-data">
+    <label>Tên sản phẩm<input name="name" required maxlength="255" autocomplete="off"></label>
+    <label>Mô tả<textarea name="description" rows="4"></textarea></label>
+    <div class="admin-form-grid">
+      <label>Giá (₫)<input name="price" type="number" min="0" step="1" required></label>
+      <label>Số lượng tồn kho<input name="stock" type="number" min="0" step="1" value="0" required></label>
+      <label>Kích thước<input name="size" maxlength="100" placeholder="Ví dụ: S / M / L"></label>
+      <label>Màu sắc<input name="color" maxlength="100" placeholder="Ví dụ: Xanh rêu"></label>
+      <label>Danh mục<select name="category_id" data-category-select><option value="">Không phân loại</option></select></label>
+      <label>Ảnh sản phẩm<input name="image" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG hoặc WebP · tối đa 5 MB</small></label>
+    </div>
+    <div class="admin-form-actions"><button class="button button-dark" type="submit">Lưu sản phẩm →</button><button class="button button-outline" type="button" data-cancel-product-form>Hủy</button></div>
+  </form>
+  <div class="form-message" data-admin-message aria-live="polite"></div>
+  <div class="admin-product-list" data-admin-product-list><p class="loading">Đang tải sản phẩm…</p></div>
+</section>
