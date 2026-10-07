@@ -1,0 +1,61 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: webapp_db
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: webapp_lab
+      MYSQL_USER: lab_user
+      MYSQL_PASSWORD: lab_password
+
+    volumes:
+      - db_data:/var/lib/mysql
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ../database/seeders/01_seed.sql:/docker-entrypoint-initdb.d/01_seed.sql:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -prootpassword --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+    networks:
+      - webapp_network
+
+  backend:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.backend
+
+    container_name: webapp_backend
+    restart: unless-stopped
+
+    ports:
+      - "3001:3001"
+
+    environment:
+      DB_HOST: db
+      DB_USER: lab_user
+      DB_PASSWORD: lab_password
+      DB_NAME: webapp_lab
+      JWT_SECRET: super_secret_key_for_lab
+      PORT: 3001
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+
+    networks:
+      - webapp_network
+
+volumes:
+  db_data:
+
+networks:
+  webapp_network:

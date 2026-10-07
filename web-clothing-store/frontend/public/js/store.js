@@ -115,36 +115,61 @@
     const form=adminProducts.querySelector('[data-product-form]');
     const toggle=adminProducts.querySelector('[data-toggle-product-form]');
     const categorySelect=adminProducts.querySelector('[data-category-select]');
+    const submitButton=form.querySelector('[type="submit"]');
+    let editingId=null;
     const renderProducts=async()=>{
       try {
         const rows=await A.request('/products');
-        target.innerHTML=rows.map((p,i)=>`<div class="admin-product"><img src="${A.escape(productImage(p,i))}" alt=""><span>${A.escape(p.name)}</span><b>${A.money(p.price)}</b><small>Còn ${A.escape(p.stock)} món</small></div>`).join('')||'<p>Chưa có sản phẩm.</p>';
+        target.innerHTML=rows.map((p,i)=>`<div class="admin-product"><img src="${A.escape(productImage(p,i))}" alt=""><span>${A.escape(p.name)}</span><b>${A.money(p.price)}</b><small>Còn ${A.escape(p.stock)} món</small><div class="admin-product-actions-row"><button type="button" data-edit-product="${p.id}" data-name="${A.escape(p.name)}" data-description="${A.escape(p.description||'')}" data-price="${p.price}" data-stock="${p.stock}" data-size="${A.escape(p.size||'')}" data-color="${A.escape(p.color||'')}" data-category="${p.category_id||''}">Sửa</button><button type="button" data-delete-product="${p.id}">Xoá</button></div></div>`).join('')||'<p>Chưa có sản phẩm.</p>';
       } catch(err) { setMessage(message,err.message,true); }
     };
     renderProducts();
     A.request('/categories').then(rows=>{
       categorySelect.innerHTML='<option value="">Không phân loại</option>'+rows.map(c=>`<option value="${A.escape(c.id)}">${A.escape(c.name)}</option>`).join('');
     }).catch(err=>{ setMessage(message,`Không thể tải danh mục: ${err.message}`,true); });
-    const closeForm=()=>{ form.reset(); form.hidden=true; toggle.setAttribute('aria-expanded','false'); };
-    toggle.addEventListener('click',()=>{
-      form.hidden=!form.hidden;
-      toggle.setAttribute('aria-expanded',String(!form.hidden));
-      if(!form.hidden) form.querySelector('[name="name"]').focus();
-    });
+    const openForm=()=>{ form.hidden=false; toggle.setAttribute('aria-expanded','true'); form.querySelector('[name="name"]').focus(); };
+    const closeForm=()=>{ form.reset(); form.hidden=true; toggle.setAttribute('aria-expanded','false'); editingId=null; submitButton.textContent='Lưu sản phẩm →'; };
+    toggle.addEventListener('click',()=>{ if(!form.hidden){ closeForm(); return; } editingId=null; openForm(); });
     adminProducts.querySelector('[data-cancel-product-form]').addEventListener('click',closeForm);
+    target.addEventListener('click', async e => {
+      const editBtn=e.target.closest('[data-edit-product]');
+      const delBtn=e.target.closest('[data-delete-product]');
+      if (editBtn) {
+        editingId=editBtn.dataset.editProduct;
+        form.elements.name.value=editBtn.dataset.name;
+        form.elements.description.value=editBtn.dataset.description;
+        form.elements.price.value=editBtn.dataset.price;
+        form.elements.stock.value=editBtn.dataset.stock;
+        form.elements.size.value=editBtn.dataset.size;
+        form.elements.color.value=editBtn.dataset.color;
+        form.elements.category_id.value=editBtn.dataset.category;
+        submitButton.textContent='Cập nhật sản phẩm →';
+        openForm();
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (delBtn) {
+        if (!confirm('Xoá sản phẩm này? Hành động không thể hoàn tác.')) return;
+        try { await A.request(`/products/${delBtn.dataset.deleteProduct}`,{method:'DELETE'}); setMessage(message,'Đã xoá sản phẩm.'); await renderProducts(); }
+        catch(err) { setMessage(message,err.message,true); }
+      }
+    });
     form.addEventListener('submit',async e=>{
       e.preventDefault();
-      const button=form.querySelector('[type="submit"]');
-      button.disabled=true; setMessage(message,'');
+      submitButton.disabled=true; setMessage(message,'');
       const payload=new FormData(form);
       if(!payload.get('category_id')) payload.delete('category_id');
       try {
-        await A.request('/products',{method:'POST',body:payload});
-        setMessage(message,'Đã thêm sản phẩm.');
+        if (editingId) {
+          await A.request(`/products/${editingId}`,{method:'PUT',body:payload});
+          setMessage(message,'Đã cập nhật sản phẩm.');
+        } else {
+          await A.request('/products',{method:'POST',body:payload});
+          setMessage(message,'Đã thêm sản phẩm.');
+        }
         closeForm();
         await renderProducts();
       } catch(err) { setMessage(message,err.message,true); }
-      finally { button.disabled=false; }
+      finally { submitButton.disabled=false; }
     });
   }
 })();

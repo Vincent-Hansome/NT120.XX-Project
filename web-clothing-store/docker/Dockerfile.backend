@@ -1,0 +1,18 @@
+# Sử dụng Node.js bản nhẹ
+FROM node:18-alpine
+
+# Cài đặt thư mục làm việc
+WORKDIR /app
+
+# Copy package.json và cài đặt thư viện
+COPY backend/package*.json ./
+RUN npm install
+
+# Copy toàn bộ code backend vào container
+COPY backend/ .
+
+# Mở port 3001
+EXPOSE 3001
+
+# Chạy server (Sử dụng nodemon nếu đang làm môi trường Dev)
+CMD ["npm", "start"]
