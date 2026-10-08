@@ -22,6 +22,13 @@ exports.register = async (req, res) => {
     res.status(201).json({ message: 'Registered successfully' });
   } catch (err) {
     console.error(err);
+
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        message: 'Name or email already registered'
+      });
+    }
+
     res.status(500).json({ message: 'Server error' });
   }
 };

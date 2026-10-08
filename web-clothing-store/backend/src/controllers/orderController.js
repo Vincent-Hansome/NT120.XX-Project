@@ -5,10 +5,17 @@ exports.createOrder = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const cartQuery = 'SELECT ci.product_id, ci.quantity, p.price, p.stock ' +
-                       'FROM cart_items ci ' +
-                       'JOIN products p ON ci.product_id = p.id ' +
-                       'WHERE ci.user_id = ?';
+    const cartQuery = `
+  SELECT
+    ci.product_id,
+    ci.quantity,
+    p.price,
+    p.stock
+  FROM cart_items ci
+  JOIN products p ON ci.product_id = p.id
+  WHERE ci.user_id = ?
+  FOR UPDATE
+`;
     const [cartItems] = await connection.query(cartQuery, [req.user.id]);
 
     if (cartItems.length === 0) {
@@ -32,15 +39,23 @@ exports.createOrder = async (req, res) => {
     const orderId = orderResult.insertId;
 
     for (const item of cartItems) {
-      await connection.query(
-        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
-        [orderId, item.product_id, item.quantity, item.price]
-      );
-      await connection.query(
-        'UPDATE products SET stock = stock - ? WHERE id = ?',
-        [item.quantity, item.product_id]
-      );
-    }
+  await connection.query(
+    'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+    [orderId, item.product_id, item.quantity, item.price]
+  );
+
+  const [updateResult] = await connection.query(
+    `UPDATE products
+     SET stock = stock - ?
+     WHERE id = ?
+       AND stock >= ?`,
+    [item.quantity, item.product_id, item.quantity]
+  );
+
+  if (updateResult.affectedRows !== 1) {
+    throw new Error(`Insufficient stock for product ${item.product_id}`);
+  }
+}
 
     await connection.query('DELETE FROM cart_items WHERE user_id = ?', [req.user.id]);
 
