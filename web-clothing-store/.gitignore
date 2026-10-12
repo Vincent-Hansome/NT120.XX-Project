@@ -1,0 +1,11 @@
+# Local and deployment environment files
+.env
+.env.*
+!.env.example
+docker/.env
+docker/.env.*
+!docker/.env.example
+!docker/.env.production.example
+**/node_modules/
+database/web-clothing-store-backup.sql
+database/*-backup.sql

@@ -95,3 +95,27 @@ exports.getOrderDetail = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+exports.getAllOrdersAdmin = async (req, res) => {
+  try {
+    const [orders] = await db.query(`
+      SELECT
+        o.id,
+        o.user_id,
+        u.name AS customer_name,
+        u.email AS customer_email,
+        o.total,
+        o.status,
+        o.created_at
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      ORDER BY o.created_at DESC
+      LIMIT 500
+    `);
+
+    res.json(orders);
+  } catch (err) {
+    console.error('getAllOrdersAdmin error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

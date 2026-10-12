@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { trustedOrigins } = require('./config/trustedOrigins');
+const { csrfProtection } = require('./middlewares/csrfMiddleware');
 
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -11,9 +13,17 @@ const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, false);
+    return callback(null, trustedOrigins.has(origin));
+  },
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token']
+}));
 app.use(express.json());
 app.use(cookieParser());
+app.use(csrfProtection);
 app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);

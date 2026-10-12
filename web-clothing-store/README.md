@@ -67,7 +67,7 @@ Project gồm ba thành phần chính:
                            ▼
                 ┌──────────────────────┐
                 │        MySQL         │
-                │      webapp_lab      │
+                │      DB_NAME      │
                 │      Port 3306       │
                 └──────────────────────┘
 ```
@@ -192,33 +192,9 @@ DB_HOST=localhost
 
 # 6. Cấu hình Database
 
-Database sử dụng:
+Docker Compose lấy `MYSQL_ROOT_PASSWORD`, `DB_NAME`, `DB_USER` và `DB_PASSWORD` từ `docker/.env` hoặc nguồn secret được inject cho deployment. Trong network Compose, Backend dùng `DB_HOST=db`.
 
-```text
-Database: webapp_lab
-User: lab_user
-Password: lab_password
-Root Password: rootpassword
-```
-
-Cấu hình này nằm trong:
-
-```text
-docker/docker-compose.yml
-```
-
-Backend Docker sử dụng:
-
-```env
-DB_HOST=db
-DB_USER=lab_user
-DB_PASSWORD=lab_password
-DB_NAME=webapp_lab
-PORT=3001
-```
-
----
-
+Không ghi mật khẩu hoặc thông tin tài khoản thật vào README. Với MySQL volume đã có, các biến `MYSQL_*` chỉ là giá trị bootstrap; thay chúng không cập nhật tài khoản đã được tạo.
 # 7. Khởi động Docker
 
 Đứng tại thư mục gốc project:
@@ -230,7 +206,7 @@ web-clothing-store/
 Chạy:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 Kiểm tra container:
@@ -249,7 +225,7 @@ webapp_backend
 Kiểm tra trạng thái:
 
 ```bash
-docker compose -f docker/docker-compose.yml ps
+docker compose --env-file docker/.env -f docker/docker-compose.yml ps
 ```
 
 MySQL cần ở trạng thái:
@@ -265,25 +241,25 @@ healthy
 Xem toàn bộ log:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs
 ```
 
 Theo dõi log realtime:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs -f
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f
 ```
 
 Chỉ xem backend:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs -f backend
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f backend
 ```
 
 Chỉ xem database:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs -f db
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f db
 ```
 
 ---
@@ -293,13 +269,13 @@ docker compose -f docker/docker-compose.yml logs -f db
 Dừng container:
 
 ```bash
-docker compose -f docker/docker-compose.yml stop
+docker compose --env-file docker/.env -f docker/docker-compose.yml stop
 ```
 
 Dừng và xóa container:
 
 ```bash
-docker compose -f docker/docker-compose.yml down
+docker compose --env-file docker/.env -f docker/docker-compose.yml down
 ```
 
 ---
@@ -309,13 +285,13 @@ docker compose -f docker/docker-compose.yml down
 Khi muốn tạo lại database từ đầu:
 
 ```bash
-docker compose -f docker/docker-compose.yml down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
 ```
 
 Sau đó:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 ### Cảnh báo
@@ -323,7 +299,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 Lệnh:
 
 ```bash
-docker compose -f docker/docker-compose.yml down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
 ```
 
 sẽ xóa Docker volume chứa dữ liệu MySQL.
@@ -517,7 +493,7 @@ Seed mặc định gồm:
 
 ```text
 Email: admin@webapp.lab
-Password: 123456
+Password: [configured locally; do not store here]
 Role: admin
 ```
 
@@ -525,7 +501,7 @@ Role: admin
 
 ```text
 Email: hacker@webapp.lab
-Password: 123456
+Password: [configured locally; do not store here]
 Role: user
 ```
 
@@ -961,7 +937,7 @@ DB_USER=root
 DB_PASSWORD=
 DB_NAME=web-clothing-store
 PORT=3001
-JWT_SECRET=your_secret_key
+JWT_SECRET=
 ```
 
 Sau đó:
@@ -986,8 +962,8 @@ web-clothing-store
 
 ```text
 db
-lab_user
-webapp_lab
+DB_USER
+DB_NAME
 ```
 
 Không nên đồng thời debug hai database mà không biết backend đang kết nối tới database nào.
@@ -1037,7 +1013,7 @@ backend/test-db.js
 Khi backend chạy trong Docker, kiểm tra bằng:
 
 ```bash
-docker compose -f docker/docker-compose.yml exec backend node test-db.js
+docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
 ```
 
 Kết quả thành công phải tương tự:
@@ -1049,13 +1025,13 @@ Kết nối MySQL thành công
 Nếu lỗi, xem log:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs backend
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs backend
 ```
 
 và:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs db
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs db
 ```
 
 ---
@@ -1065,7 +1041,7 @@ docker compose -f docker/docker-compose.yml logs db
 Truy cập MySQL container:
 
 ```bash
-docker exec -it webapp_db mysql -u lab_user -plab_password webapp_lab
+docker compose --env-file docker/.env -f docker/docker-compose.yml exec db sh -lc 'mysql -u "$MYSQL_USER" -p "$MYSQL_DATABASE"'
 ```
 
 Kiểm tra database:
@@ -1077,7 +1053,7 @@ SHOW DATABASES;
 Chọn database:
 
 ```sql
-USE webapp_lab;
+USE DB_NAME;
 ```
 
 Kiểm tra bảng:
@@ -1124,7 +1100,7 @@ exit;
 Ví dụ:
 
 ```text
-Table 'webapp_lab.cart_items' doesn't exist
+Table 'DB_NAME.cart_items' doesn't exist
 ```
 
 Nguyên nhân:
@@ -1134,13 +1110,13 @@ Database chưa được tạo đúng schema.
 Cách xử lý:
 
 ```bash
-docker compose -f docker/docker-compose.yml down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
 ```
 
 Sau đó:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 ---
@@ -1160,13 +1136,13 @@ Schema database cũ không có cột mà backend yêu cầu.
 Reset database:
 
 ```bash
-docker compose -f docker/docker-compose.yml down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
 ```
 
 Sau đó build lại:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 ---
@@ -1209,7 +1185,7 @@ Docker Compose sử dụng MySQL healthcheck để đảm bảo database ready t
 Kiểm tra:
 
 ```bash
-docker compose -f docker/docker-compose.yml ps
+docker compose --env-file docker/.env -f docker/docker-compose.yml ps
 ```
 
 Database cần ở trạng thái:
@@ -1234,8 +1210,8 @@ Nếu database đã tồn tại từ trước, seed mới sẽ không tự chạ
 Reset database:
 
 ```bash
-docker compose -f docker/docker-compose.yml down -v
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 ---
@@ -1289,7 +1265,7 @@ dữ liệu vẫn tồn tại.
 Chỉ khi dùng:
 
 ```bash
-docker compose down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
 ```
 
 volume mới bị xóa.
@@ -1320,33 +1296,15 @@ trong trường hợp backend chạy bên trong Docker.
 
 ---
 
-# 38. Bảo mật
+# 38. Quản lý secrets
 
-Không nên commit `.env` lên Git.
-
-`.gitignore` nên chứa:
-
-```text
-.env
-node_modules/
-uploads/*
-!.gitkeep
-```
-
-Không sử dụng secret đơn giản trong môi trường production.
-
-Ví dụ:
-
-```env
-JWT_SECRET=super_secret_key
-```
-
-chỉ nên dùng cho môi trường lab/development.
-
-Production cần một secret đủ mạnh và được lưu bằng secret manager hoặc environment variables.
-
----
-
+- Chạy Backend trực tiếp: dùng `backend/.env`, được bỏ qua bởi `backend/.gitignore`.
+- Docker Compose phát triển: tạo `docker/.env` từ `docker/.env.example`, điền giá trị cục bộ rồi chạy lệnh từ thư mục gốc với `--env-file docker/.env`.
+- Production: không dùng file secret trong repository; inject biến từ secret manager hoặc file được lưu ngoài repository, đặt `NODE_ENV=production`, và dùng cấu hình riêng cho môi trường production.
+- Mỗi môi trường phải có JWT secret riêng. Production yêu cầu secret tối thiểu 32 byte, DB password không rỗng và DB user không phải `root`.
+- Thay `JWT_SECRET` làm các JWT đã phát hành bằng secret cũ hết hiệu lực khi backend dùng secret mới. Không restart/recreate backend cho tới khi đã thông báo tác động đăng nhập và được xác nhận.
+- Các biến `MYSQL_*` của image chỉ khởi tạo tài khoản khi data directory còn trống. Đổi `MYSQL_PASSWORD` trong Compose không tự đổi mật khẩu trong MySQL volume hiện có; cần quy trình chuyển đổi riêng và kiểm tra kết nối.
+- Không commit file env đã điền giá trị. Không dùng `docker compose --env-file docker/.env -f docker/docker-compose.yml down -v` để cập nhật cấu hình vì lệnh đó xóa volume dữ liệu.
 # 39. Transaction khi đặt hàng
 
 Order sử dụng transaction:
@@ -1404,13 +1362,13 @@ docker ps
 ### Bước 2
 
 ```bash
-docker compose -f docker/docker-compose.yml ps
+docker compose --env-file docker/.env -f docker/docker-compose.yml ps
 ```
 
 ### Bước 3
 
 ```bash
-docker compose -f docker/docker-compose.yml exec backend node test-db.js
+docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
 ```
 
 ### Bước 4
@@ -1477,20 +1435,20 @@ Thử:
 Mỗi lần sửa Backend:
 
 ```bash
-docker compose -f docker/docker-compose.yml restart backend
+docker compose --env-file docker/.env -f docker/docker-compose.yml restart backend
 ```
 
 Nếu sửa Dockerfile:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 Nếu sửa schema và muốn khởi tạo database mới:
 
 ```bash
-docker compose -f docker/docker-compose.yml down -v
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 ---
@@ -1536,19 +1494,19 @@ cd web-clothing-store
 Khởi động:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
 ```
 
 Kiểm tra:
 
 ```bash
-docker compose -f docker/docker-compose.yml ps
+docker compose --env-file docker/.env -f docker/docker-compose.yml ps
 ```
 
 Kiểm tra database:
 
 ```bash
-docker compose -f docker/docker-compose.yml exec backend node test-db.js
+docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
 ```
 
 Backend:
@@ -1568,13 +1526,13 @@ Tài khoản demo:
 ```text
 Admin
 Email: admin@webapp.lab
-Password: 123456
+Password: [configured locally; do not store here]
 ```
 
 ```text
 User
 Email: hacker@webapp.lab
-Password: 123456
+Password: [configured locally; do not store here]
 ```
 
 ---

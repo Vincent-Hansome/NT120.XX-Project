@@ -1,4 +1,4 @@
-USE webapp_lab;
+USE `web-clothing-store`;
 
 -- =========================
 -- USERS
@@ -40,7 +40,7 @@ VALUES
     100,
     'M',
     'Black',
-    '/uploads/shirt.png',
+    NULL,
     1
 ),
 (
@@ -50,7 +50,7 @@ VALUES
     50,
     'L',
     'Black',
-    '/uploads/hoodie.png',
+    NULL,
     2
 ),
 (
@@ -60,6 +60,6 @@ VALUES
     200,
     NULL,
     'Mixed',
-    '/uploads/sticker.png',
+    NULL,
     3
 );

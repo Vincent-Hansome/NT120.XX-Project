@@ -93,12 +93,42 @@
   })();
 
   const profile = document.querySelector('[data-profile-page]');
-  if (profile) (async () => {
+  if (profile) {
     const message=profile.querySelector('[data-profile-message]');
-    try { const user=await A.request('/users/me'); profile.querySelector('[data-profile-name]').textContent=user.name; profile.querySelector('[data-profile-email]').textContent=user.email; profile.querySelector('[data-profile-created]').textContent=user.created_at?new Date(user.created_at).toLocaleDateString('vi-VN'):'MỘC member'; profile.querySelector('.profile-loading').hidden=true; profile.querySelector('.profile-content').hidden=false; }
-    catch(err) { setMessage(message, `${err.message} — Vui lòng đăng nhập để xem tài khoản.`, true); profile.querySelector('.profile-loading').innerHTML='<a href="/login" class="button button-dark">Đăng nhập →</a>'; }
-    profile.querySelector('[data-logout]')?.addEventListener('click', async () => { try { await A.request('/users/logout',{method:'POST',body:JSON.stringify({})}); location.assign('/'); } catch(err) { setMessage(message,err.message,true); } });
-  })();
+    const passwordForm=profile.querySelector('[data-password-change-form]');
+    passwordForm?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const passwordMessage=passwordForm.querySelector('[data-password-message]');
+      const button=passwordForm.querySelector('button[type="submit"]');
+      button.disabled=true;
+      setMessage(passwordMessage,'');
+      const payload=Object.fromEntries(new FormData(passwordForm).entries());
+      try {
+        await A.request('/users/me',{method:'PUT',body:JSON.stringify(payload)});
+        passwordForm.reset();
+        setMessage(passwordMessage,'Mật khẩu đã được cập nhật.');
+      } catch(err) {
+        setMessage(passwordMessage,err.message,true);
+      } finally {
+        button.disabled=false;
+      }
+    });
+    (async () => {
+      try {
+        const user=await A.request('/users/me');
+        profile.querySelector('[data-profile-name]').textContent=user.name;
+        profile.querySelector('[data-profile-email]').textContent=user.email;
+        profile.querySelector('[data-profile-created]').textContent=user.created_at?new Date(user.created_at).toLocaleDateString('vi-VN'):'MỘC member';
+        profile.querySelector('.profile-loading').hidden=true;
+        profile.querySelector('.profile-content').hidden=false;
+        passwordForm.hidden=false;
+      } catch(err) {
+        setMessage(message, `${err.message} — Vui lòng đăng nhập để xem tài khoản.`, true);
+        profile.querySelector('.profile-loading').innerHTML='<a href="/login" class="button button-dark">Đăng nhập →</a>';
+      }
+      profile.querySelector('[data-logout]')?.addEventListener('click', async () => { try { await A.request('/users/logout',{method:'POST',body:JSON.stringify({})}); location.assign('/'); } catch(err) { setMessage(message,err.message,true); } });
+    })();
+  }
 
   const checkout = document.querySelector('[data-checkout-page]');
   if (checkout) (async () => {
@@ -107,6 +137,34 @@
     catch(err){button.disabled=true;setMessage(message,`${err.message} — Vui lòng đăng nhập trước.`,true);}
     button.addEventListener('click',async()=>{button.disabled=true;button.textContent='Đang tạo đơn…';try{await A.request('/orders',{method:'POST',body:JSON.stringify({})});location.assign('/orders');}catch(err){setMessage(message,err.message,true);button.disabled=false;button.textContent='Xác nhận đặt hàng →';}});
   })();
+
+  const adminOrders=document.querySelector('[data-admin-orders]');
+  if(adminOrders) {
+    const list=adminOrders.querySelector('[data-admin-orders-list]');
+    const message=adminOrders.querySelector('[data-admin-orders-message]');
+
+    (async()=>{
+      try {
+        const rows=await A.request('/orders/admin/all');
+        if(!Array.isArray(rows)) throw new Error('Dữ liệu đơn hàng không hợp lệ.');
+
+        if(!rows.length) {
+          list.innerHTML='<div class="empty-state"><p>Chưa có đơn hàng nào.</p></div>';
+          return;
+        }
+
+        list.innerHTML=rows.map(o=>{
+          const createdAt=new Date(o.created_at);
+          const orderDate=Number.isNaN(createdAt.valueOf())?'—':createdAt.toLocaleDateString('vi-VN');
+          return `<article class="order-row"><div class="order-head admin-order-head"><span><small class="eyebrow">MÃ ĐƠN</small><b>${A.escape(`MC-${String(o.id).padStart(5,'0')}`)}</b></span><span><small class="eyebrow">KHÁCH HÀNG</small><b>${A.escape(o.customer_name)}</b><small>${A.escape(o.customer_email)}</small></span><span><small class="eyebrow">NGÀY ĐẶT</small><b>${A.escape(orderDate)}</b></span><span><small class="eyebrow">TRẠNG THÁI</small><b>${A.escape(o.status)}</b></span><strong>${A.escape(A.money(o.total))}</strong></div></article>`;
+        }).join('');
+        setMessage(message,'');
+      } catch(err) {
+        setMessage(message,`${err.message} — Hãy đăng nhập bằng tài khoản admin.`,true);
+        list.innerHTML='';
+      }
+    })();
+  }
 
   const adminProducts=document.querySelector('[data-admin-products]');
   if(adminProducts) {

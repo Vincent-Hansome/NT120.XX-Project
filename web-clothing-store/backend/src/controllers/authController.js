@@ -1,15 +1,36 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const { AUTH_COOKIE_NAME, JWT_TTL_SECONDS, authCookieOptions } = require('../config/authCookie');
+const {
+  isObjectBody,
+  normalizeEmail,
+  validateEmail,
+  validateLoginPassword,
+  validateName,
+  validateNewPassword
+} = require('../utils/authValidation');
 
 exports.register = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Missing fields' });
-    }
+  if (!isObjectBody(req.body)) {
+    return res.status(400).json({ message: 'Request body must be a JSON object' });
+  }
 
-    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+  const { name, email, password } = req.body;
+  const nameError = validateName(name);
+  if (nameError) return res.status(400).json({ message: nameError });
+
+  const emailError = validateEmail(email);
+  if (emailError) return res.status(400).json({ message: emailError });
+
+  const passwordError = validateNewPassword(password);
+  if (passwordError) return res.status(400).json({ message: passwordError });
+
+  const normalizedName = name.trim();
+  const normalizedEmail = normalizeEmail(email);
+
+  try {
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
     if (existing.length > 0) {
       return res.status(409).json({ message: 'Email already registered' });
     }
@@ -17,26 +38,37 @@ exports.register = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     await db.query(
       'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, hashed]
+      [normalizedName, normalizedEmail, hashed]
     );
-    res.status(201).json({ message: 'Registered successfully' });
+    return res.status(201).json({ message: 'Registered successfully' });
   } catch (err) {
-    console.error(err);
-
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({
-        message: 'Name or email already registered'
+        message: 'Account already exists'
       });
     }
 
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
 exports.login = async (req, res) => {
+  if (!isObjectBody(req.body)) {
+    return res.status(400).json({ message: 'Request body must be a JSON object' });
+  }
+
+  const { email, password } = req.body;
+  const emailError = validateEmail(email);
+  if (emailError) return res.status(400).json({ message: emailError });
+
+  const passwordError = validateLoginPassword(password);
+  if (passwordError) return res.status(400).json({ message: passwordError });
+
   try {
-    const { email, password } = req.body;
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await db.query(
+      'SELECT id, name, email, role, password FROM users WHERE email = ?',
+      [normalizeEmail(email)]
+    );
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -48,15 +80,14 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' }
+      { algorithm: 'HS256', expiresIn: JWT_TTL_SECONDS }
     );
 
-    res.cookie('token', token, { httpOnly: true });
-    res.json({ message: 'Logged in', user: { id: user.id, name: user.name, role: user.role } });
+    res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions());
+    return res.json({ message: 'Logged in', user: { id: user.id, name: user.name, role: user.role } });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
