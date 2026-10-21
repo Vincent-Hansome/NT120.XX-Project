@@ -10,6 +10,7 @@ const {
   validateName,
   validateNewPassword
 } = require('../utils/authValidation');
+const { logControllerError } = require('../utils/controllerLogger');
 
 exports.register = async (req, res) => {
   if (!isObjectBody(req.body)) {
@@ -48,6 +49,7 @@ exports.register = async (req, res) => {
       });
     }
 
+    logControllerError('authController', 'register', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -66,7 +68,7 @@ exports.login = async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      'SELECT id, name, email, role, password FROM users WHERE email = ?',
+      'SELECT id, name, email, role, password, token_version FROM users WHERE email = ?',
       [normalizeEmail(email)]
     );
     if (rows.length === 0) {
@@ -80,7 +82,7 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id },
+      { id: user.id, tokenVersion: user.token_version },
       process.env.JWT_SECRET,
       { algorithm: 'HS256', expiresIn: JWT_TTL_SECONDS }
     );
@@ -88,6 +90,7 @@ exports.login = async (req, res) => {
     res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions());
     return res.json({ message: 'Logged in', user: { id: user.id, name: user.name, role: user.role } });
   } catch (err) {
+    logControllerError('authController', 'login', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };

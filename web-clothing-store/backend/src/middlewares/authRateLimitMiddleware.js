@@ -1,7 +1,6 @@
 const crypto = require('node:crypto');
 const dns = require('node:dns').promises;
 const net = require('node:net');
-const { normalizeEmail } = require('../utils/authValidation');
 
 const AUTH_RATE_LIMITS = Object.freeze({
   login: Object.freeze({ windowMs: 15 * 60 * 1000, max: 10 }),
@@ -67,7 +66,7 @@ function requestHeader(req, name) {
   return req.headers?.[name.toLowerCase()];
 }
 
-async function resolveRegisterClientIp(req, getFrontendAddresses = resolveFrontendAddresses) {
+async function resolveClientIp(req, getFrontendAddresses = resolveFrontendAddresses) {
   const socketAddress = req.socket?.remoteAddress;
   const socketIp = normalizeIpAddress(socketAddress);
   const fallbackIp = socketIp || socketAddress || 'unknown';
@@ -148,14 +147,27 @@ function createRateLimiter({ windowMs, max, keyForRequest, countOnlyStatus }) {
   return middleware;
 }
 
-const loginRateLimit = createRateLimiter({
-  ...AUTH_RATE_LIMITS.login,
-  keyForRequest(req) {
-    const email = normalizeEmail(req.body?.email);
-    return email ? `login:${email}` : `login:invalid:${req.socket?.remoteAddress || 'unknown'}`;
-  },
-  countOnlyStatus: 401
-});
+function createLoginRateLimit({
+  resolveClientIp: clientIpResolver = resolveClientIp,
+  windowMs = AUTH_RATE_LIMITS.login.windowMs,
+  max = AUTH_RATE_LIMITS.login.max
+} = {}) {
+  const limiter = createRateLimiter({
+    windowMs,
+    max,
+    keyForRequest(req) {
+      return `login:${req.socket?.remoteAddress || 'unknown'}`;
+    },
+    countOnlyStatus: 401
+  });
+
+  return async function loginRateLimit(req, res, next) {
+    const clientIp = await clientIpResolver(req);
+    return limiter.withIdentity(req, res, next, `login:${clientIp}`);
+  };
+}
+
+const loginRateLimit = createLoginRateLimit();
 
 const registerLimiter = createRateLimiter({
   ...AUTH_RATE_LIMITS.register,
@@ -165,15 +177,16 @@ const registerLimiter = createRateLimiter({
 });
 
 async function registerRateLimit(req, res, next) {
-  const clientIp = await resolveRegisterClientIp(req);
+  const clientIp = await resolveClientIp(req);
   return registerLimiter.withIdentity(req, res, next, `register:${clientIp}`);
 }
 
 module.exports = {
   AUTH_RATE_LIMITS,
   createFrontendAddressResolver,
+  createLoginRateLimit,
   loginRateLimit,
   normalizeIpAddress,
   registerRateLimit,
-  resolveRegisterClientIp
+  resolveClientIp
 };

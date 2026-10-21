@@ -138,7 +138,11 @@ web-clothing-store/
 
 # 4. Yêu cầu môi trường
 
+Tất cả lệnh Docker Compose trong README này chạy từ thư mục gốc web-clothing-store/ và dùng cấu hình --env-file docker/.env -f docker/docker-compose.yml. Tạo docker/.env từ docker/.env.example và điền cấu hình cục bộ trước khi chạy Compose; không commit file đã điền.
+
 Có thể chạy project bằng Docker.
+
+`CSRF_TRUSTED_ORIGINS` là danh sách origin chính xác, phân cách bằng dấu phẩy. File mẫu gồm `http://localhost:3000` và IP LAN minh họa `http://192.168.1.83:3000`; thay IP này bằng địa chỉ LAN thực tế. Cấu hình production chỉ chấp nhận origin HTTPS.
 
 Cần cài:
 
@@ -153,7 +157,7 @@ docker --version
 ```
 
 ```bash
-docker compose version
+docker compose --env-file docker/.env -f docker/docker-compose.yml version
 ```
 
 Kiểm tra Node.js:
@@ -280,33 +284,13 @@ docker compose --env-file docker/.env -f docker/docker-compose.yml down
 
 ---
 
-# 10. Reset hoàn toàn database Docker
+# 10. Cập nhật Docker mà vẫn giữ dữ liệu MySQL
 
-Khi muốn tạo lại database từ đầu:
+Database được lưu trong named volume db_data. Khi chỉ cập nhật frontend hoặc backend, không xóa volume này và không cần dựng lại database. Hướng dẫn build riêng từng dịch vụ nằm ở mục 41.
 
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-```
+Nếu cần dừng stack, lệnh docker compose --env-file docker/.env -f docker/docker-compose.yml down (không dùng thao tác xóa volume) sẽ gỡ container và network nhưng giữ lại named volume db_data. Khi chạy lại Compose với cùng project và file cấu hình, MySQL sẽ dùng lại dữ liệu đó.
 
-Sau đó:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
-
-### Cảnh báo
-
-Lệnh:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-```
-
-sẽ xóa Docker volume chứa dữ liệu MySQL.
-
-Tất cả dữ liệu hiện tại trong database Docker sẽ bị xóa.
-
----
+Nếu gặp lỗi schema, hãy sao lưu và kiểm tra đúng database trước khi áp dụng migration đã được rà soát. Không khởi tạo lại volume để sửa lỗi ứng dụng hoặc schema.
 
 # 11. Database Schema
 
@@ -483,31 +467,29 @@ Giá sản phẩm được lưu lại tại thời điểm đặt hàng.
 
 File seed:
 
-```text
+~~~text
 database/seeders/01_seed.sql
-```
+~~~
 
-Seed mặc định gồm:
+Khi MySQL khởi tạo một data directory mới, seed tạo các tài khoản demo sau:
 
-### Admin
+### Admin demo
 
-```text
+~~~text
 Email: admin@webapp.lab
-Password: [configured locally; do not store here]
+Password: 123456
 Role: admin
-```
+~~~
 
-### User
+### User demo
 
-```text
+~~~text
 Email: hacker@webapp.lab
-Password: [configured locally; do not store here]
+Password: 123456
 Role: user
-```
+~~~
 
-Database cũng có sẵn category và sản phẩm mẫu.
-
----
+Đây là thông tin demo được seed trong database/seeders/01_seed.sql, chỉ dùng cho môi trường local. Hãy đổi mật khẩu của các tài khoản này trước khi triển khai ra môi trường thật. Seed cũng tạo category và sản phẩm mẫu. MySQL không chạy lại seed khi volume đã có dữ liệu.
 
 # 19. Authentication
 
@@ -1099,53 +1081,21 @@ exit;
 
 Ví dụ:
 
-```text
+~~~text
 Table 'DB_NAME.cart_items' doesn't exist
-```
+~~~
 
-Nguyên nhân:
-
-Database chưa được tạo đúng schema.
-
-Cách xử lý:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-```
-
-Sau đó:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
-
----
+Kiểm tra backend đang trỏ tới đúng database. Với volume đã tồn tại, script khởi tạo schema không tự chạy lại. Hãy sao lưu dữ liệu, xác nhận database đích và áp dụng migration phù hợp vào database hiện có. Giữ nguyên db_data; không xóa volume để xử lý lỗi thiếu bảng.
 
 ## Lỗi: Unknown column
 
 Ví dụ:
 
-```text
+~~~text
 Unknown column 'stock'
-```
+~~~
 
-Nguyên nhân:
-
-Schema database cũ không có cột mà backend yêu cầu.
-
-Reset database:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-```
-
-Sau đó build lại:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
-
----
+Backend và schema trong database hiện có đang không đồng bộ. Sao lưu database, rà soát thay đổi schema và áp dụng migration có kiểm soát. Không xóa hoặc tạo lại db_data để cập nhật ứng dụng.
 
 ## Lỗi: Port 3306 already allocated
 
@@ -1198,23 +1148,9 @@ healthy
 
 ## Lỗi: Invalid credentials
 
-Kiểm tra tài khoản seed:
+Tài khoản seed admin@webapp.lab / hacker@webapp.lab với mật khẩu 123456 chỉ dành cho demo local (xem mục 18). Trên volume đã có dữ liệu, MySQL không chạy lại seed nên mật khẩu có thể khác.
 
-```text
-admin@webapp.lab
-123456
-```
-
-Nếu database đã tồn tại từ trước, seed mới sẽ không tự chạy lại.
-
-Reset database:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
-
----
+Không xóa database để khôi phục đăng nhập. Xác nhận đúng tài khoản và database, rồi dùng quy trình cập nhật hoặc khôi phục mật khẩu có kiểm soát để giữ nguyên dữ liệu.
 
 ## Lỗi: Ảnh sản phẩm 404
 
@@ -1246,31 +1182,15 @@ http://localhost:3001/uploads/shirt.png
 
 # 36. Docker Volume
 
-MySQL sử dụng volume:
+MySQL lưu dữ liệu trong named volume:
 
-```text
+~~~text
 db_data
-```
+~~~
 
-Volume giúp dữ liệu database không nằm trực tiếp trong writable layer của container.
+Volume này tồn tại qua việc restart container hoặc chạy docker compose --env-file docker/.env -f docker/docker-compose.yml down không kèm thao tác xóa volume. Chạy lại stack với cùng Compose project sẽ gắn lại volume đó.
 
-Khi restart:
-
-```bash
-docker restart webapp_db
-```
-
-dữ liệu vẫn tồn tại.
-
-Chỉ khi dùng:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-```
-
-volume mới bị xóa.
-
----
+Không xóa db_data khi chỉ muốn cập nhật frontend hoặc backend. Dùng lệnh cập nhật riêng ở mục 41. Tránh các thao tác Docker dọn dẹp/xóa volume khi chưa có backup đã kiểm tra.
 
 # 37. Docker Network
 
@@ -1298,13 +1218,14 @@ trong trường hợp backend chạy bên trong Docker.
 
 # 38. Quản lý secrets
 
-- Chạy Backend trực tiếp: dùng `backend/.env`, được bỏ qua bởi `backend/.gitignore`.
-- Docker Compose phát triển: tạo `docker/.env` từ `docker/.env.example`, điền giá trị cục bộ rồi chạy lệnh từ thư mục gốc với `--env-file docker/.env`.
-- Production: không dùng file secret trong repository; inject biến từ secret manager hoặc file được lưu ngoài repository, đặt `NODE_ENV=production`, và dùng cấu hình riêng cho môi trường production.
-- Mỗi môi trường phải có JWT secret riêng. Production yêu cầu secret tối thiểu 32 byte, DB password không rỗng và DB user không phải `root`.
-- Thay `JWT_SECRET` làm các JWT đã phát hành bằng secret cũ hết hiệu lực khi backend dùng secret mới. Không restart/recreate backend cho tới khi đã thông báo tác động đăng nhập và được xác nhận.
-- Các biến `MYSQL_*` của image chỉ khởi tạo tài khoản khi data directory còn trống. Đổi `MYSQL_PASSWORD` trong Compose không tự đổi mật khẩu trong MySQL volume hiện có; cần quy trình chuyển đổi riêng và kiểm tra kết nối.
-- Không commit file env đã điền giá trị. Không dùng `docker compose --env-file docker/.env -f docker/docker-compose.yml down -v` để cập nhật cấu hình vì lệnh đó xóa volume dữ liệu.
+- Chạy Backend trực tiếp: dùng backend/.env, được bỏ qua bởi backend/.gitignore.
+- Docker Compose phát triển: tạo docker/.env từ docker/.env.example, điền giá trị cục bộ rồi chạy lệnh từ thư mục gốc với --env-file docker/.env -f docker/docker-compose.yml.
+- Môi trường triển khai: không để secret trong repository; inject biến từ secret manager hoặc file ngoài repository và dùng cấu hình riêng cho môi trường đó.
+- Mỗi môi trường cần JWT secret riêng. Cấu hình hiện tại yêu cầu secret đủ độ dài, DB password không rỗng và DB user không phải root; đây không phải xác nhận rằng ứng dụng đã được rà soát đầy đủ hoặc sẵn sàng production.
+- Thay JWT_SECRET làm các JWT đã phát hành bằng secret cũ hết hiệu lực khi backend dùng secret mới. Cần thông báo tác động đăng nhập trước khi triển khai thay đổi này.
+- Các biến MYSQL_* của image chỉ khởi tạo tài khoản khi data directory còn trống. Đổi MYSQL_PASSWORD trong Compose không tự đổi mật khẩu trong MySQL volume hiện có; cần quy trình chuyển đổi riêng và kiểm tra kết nối.
+- Không commit file env đã điền giá trị. Không xóa named volume db_data để cập nhật cấu hình hoặc ứng dụng; cập nhật đúng service bằng các lệnh tại mục 41.
+
 # 39. Transaction khi đặt hàng
 
 Order sử dụng transaction:
@@ -1405,12 +1326,16 @@ http://localhost:3000
 
 ### Bước 8
 
-Đăng nhập:
+Đăng nhập bằng tài khoản demo được seed:
 
-```text
+~~~text
 admin@webapp.lab
 123456
-```
+~~~
+
+Thông tin này chỉ dành cho demo local. Đổi mật khẩu trước khi triển khai ra môi trường thật.
+
+
 
 ### Bước 9
 
@@ -1432,26 +1357,29 @@ Thử:
 
 # 41. Quy trình development khuyến nghị
 
-Mỗi lần sửa Backend:
+Chạy tất cả lệnh sau từ thư mục gốc web-clothing-store/, dùng đúng --env-file docker/.env -f docker/docker-compose.yml. Các lệnh nhắm riêng service và không xóa volume db_data.
 
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml restart backend
-```
+Cập nhật hoặc build lại Backend:
 
-Nếu sửa Dockerfile:
+~~~bash
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps backend
+~~~
 
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
+Cập nhật hoặc build lại Frontend:
 
-Nếu sửa schema và muốn khởi tạo database mới:
+~~~bash
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps frontend
+~~~
 
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down -v
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
+Build lại cả hai service ứng dụng mà không khởi động lại dependencies:
 
----
+~~~bash
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps backend frontend
+~~~
+
+Các lệnh này không yêu cầu dừng hoặc dựng lại service db; bảo đảm MySQL đang chạy trước khi cập nhật ứng dụng. Không xóa db_data khi chỉ sửa code hoặc Dockerfile frontend/backend.
+
+Thay đổi schema cần migration riêng trên database hiện có: sao lưu trước, rà soát migration và giữ nguyên volume. Các script schema.sql/seed là bước khởi tạo ban đầu, không phải quy trình cập nhật schema cho database đã có dữ liệu.
 
 # 42. Không nên làm
 
@@ -1473,7 +1401,7 @@ Backend Docker → localhost:3306
 
 Không nên chạy đồng thời nhiều database rồi không xác định backend đang sử dụng database nào.
 
-Không nên xóa Docker volume nếu chưa backup dữ liệu.
+Không xóa named volume db_data khi chỉ cập nhật frontend hoặc backend. Trước mọi thao tác dự kiến làm thay đổi dữ liệu, hãy tạo và kiểm tra backup.
 
 Không nên sửa schema trực tiếp trong database mà không cập nhật:
 
@@ -1526,13 +1454,13 @@ Tài khoản demo:
 ```text
 Admin
 Email: admin@webapp.lab
-Password: [configured locally; do not store here]
+Password: 123456 (demo only; change before real deployment)
 ```
 
 ```text
 User
 Email: hacker@webapp.lab
-Password: [configured locally; do not store here]
+Password: 123456 (demo only; change before real deployment)
 ```
 
 ---
@@ -1541,11 +1469,11 @@ Password: [configured locally; do not store here]
 
 | Hiện tượng | Nguyên nhân | Cách xử lý |
 |---|---|---|
-| `ER_NO_SUCH_TABLE` | Thiếu bảng | Reset database |
-| `Unknown column` | Schema cũ | Reset database |
+| `ER_NO_SUCH_TABLE` | Thiếu bảng | Sao lưu, xác nhận database đích và áp dụng migration phù hợp; giữ nguyên volume |
+| `Unknown column` | Schema cũ | Sao lưu, rà soát và áp dụng migration phù hợp; giữ nguyên volume |
 | `ECONNREFUSED` | MySQL chưa ready | Kiểm tra healthcheck |
 | `3306 already allocated` | XAMPP/MySQL đang dùng port | Không publish 3306 của Docker |
-| `Invalid credentials` | Seed cũ/hash sai | Reset database |
+| `Invalid credentials` | Thông tin tài khoản không khớp | Xác nhận database và cập nhật/khôi phục mật khẩu có kiểm soát; giữ nguyên volume |
 | Product image 404 | Không có file upload | Kiểm tra `backend/uploads` |
 | Cart duplicate | Request đồng thời | UNIQUE `(user_id, product_id)` |
 | Overselling | Race condition stock | Transaction + `FOR UPDATE` |

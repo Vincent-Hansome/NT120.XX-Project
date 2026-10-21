@@ -36,13 +36,13 @@ services:
       - "127.0.0.1:3001:3001"
 
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
       DB_HOST: db
       DB_USER: ${DB_USER:?Set DB_USER in docker/.env or inject it from a secret manager}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in docker/.env or inject it from a secret manager}
       DB_NAME: ${DB_NAME:?Set DB_NAME in docker/.env or inject it from a secret manager}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in docker/.env or inject it from a secret manager}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       PORT: 3001
 
     depends_on:
@@ -50,8 +50,14 @@ services:
         condition: service_healthy
 
     volumes:
-      - ../backend:/app
-      - /app/node_modules
+      - ../backend/uploads:/app/uploads
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('node:http').get('http://127.0.0.1:3001/', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
     networks:
       - webapp_network
@@ -72,9 +78,16 @@ services:
       API_URL: /api
       API_PROXY_TARGET: http://backend:3001
 
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('node:http').get('http://127.0.0.1:3000/', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
 
     networks:
       - webapp_network
@@ -93,8 +106,7 @@ services:
 
     depends_on:
       frontend:
-        condition: service_started
-
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health"]
       interval: 30s

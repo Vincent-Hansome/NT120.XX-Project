@@ -1,5 +1,7 @@
 (() => {
-  const base = (window.MOC_API || '/api').replace(/\/$/, '');
+  const configuredApiUrl = document.querySelector('meta[name="moc-api"]')?.content || '/api';
+  window.MOC_API = configuredApiUrl;
+  const base = configuredApiUrl.replace(/\/$/, '');
   const host = base.replace(/\/api$/, '');
   const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
   let csrfToken = null;

@@ -1,0 +1,21 @@
+# Environment files and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies
+**/node_modules/
+
+# Runtime-generated files
+web-clothing-store/uploads/
+web-clothing-store/logs/
+
+# Local project archive and database backups
+/web-clothing-store.zip
+/web-clothing-store-backups/
+web-clothing-store/database/*backup*.sql
+web-clothing-store/database/*dump*.sql
+
+# OS-generated files
+.DS_Store
+Thumbs.db

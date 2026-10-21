@@ -8,3 +8,5 @@
 .git
 **/*backup*.sql
 **/*dump*.sql
+**/npm-debug.log*
+backend/uploads/

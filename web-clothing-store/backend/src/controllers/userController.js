@@ -7,6 +7,7 @@ const {
   validateName,
   validateNewPassword
 } = require('../utils/authValidation');
+const { logControllerError } = require('../utils/controllerLogger');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -14,6 +15,7 @@ exports.getProfile = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
     res.json(rows[0]);
   } catch (err) {
+    logControllerError('userController', 'getProfile', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -64,7 +66,7 @@ exports.updateProfile = async (req, res) => {
       const matches = await bcrypt.compare(req.body.currentPassword, rows[0].password);
       if (!matches) return res.status(403).json({ message: 'Current password is incorrect' });
 
-      assignments.push('password = ?');
+      assignments.push('password = ?', 'token_version = token_version + 1');
       values.push(await bcrypt.hash(req.body.newPassword, 10));
     }
 
@@ -74,14 +76,31 @@ exports.updateProfile = async (req, res) => {
     }
 
     values.push(req.user.id);
-    await db.query(`UPDATE users SET ${assignments.join(', ')} WHERE id = ?`, values);
+    const [result] = await db.query(`UPDATE users SET ${assignments.join(', ')} WHERE id = ?`, values);
+    if (hasCurrentPassword && result.affectedRows !== 1) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     return res.json({ message: 'Profile updated' });
   } catch (err) {
+    logControllerError('userController', 'updateProfile', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
 
-exports.logout = (req, res) => {
-  clearAuthCookie(res);
-  res.json({ message: 'Logged out' });
+exports.logout = async (req, res) => {
+  try {
+    const [result] = await db.query(
+      'UPDATE users SET token_version = token_version + 1 WHERE id = ?',
+      [req.user.id]
+    );
+    if (result.affectedRows !== 1) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    clearAuthCookie(res);
+    return res.json({ message: 'Logged out' });
+  } catch (err) {
+    logControllerError('userController', 'logout', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
 };

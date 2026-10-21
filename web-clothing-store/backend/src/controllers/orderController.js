@@ -1,5 +1,7 @@
 ﻿const db = require('../config/db');
 
+const { logControllerError } = require('../utils/controllerLogger');
+
 exports.createOrder = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -63,7 +65,7 @@ exports.createOrder = async (req, res) => {
     res.status(201).json({ message: 'Order created', orderId, total });
   } catch (err) {
     await connection.rollback();
-    console.error(err);
+    logControllerError('orderController', 'createOrder', err);
     res.status(500).json({ message: 'Server error' });
   } finally {
     connection.release();
@@ -75,6 +77,7 @@ exports.getMyOrders = async (req, res) => {
     const [orders] = await db.query('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
     res.json(orders);
   } catch (err) {
+    logControllerError('orderController', 'getMyOrders', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -92,6 +95,7 @@ exports.getOrderDetail = async (req, res) => {
 
     res.json({ order: orders[0], items });
   } catch (err) {
+    logControllerError('orderController', 'getOrderDetail', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -115,7 +119,7 @@ exports.getAllOrdersAdmin = async (req, res) => {
 
     res.json(orders);
   } catch (err) {
-    console.error('getAllOrdersAdmin error:', err);
+    logControllerError('orderController', 'getAllOrdersAdmin', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

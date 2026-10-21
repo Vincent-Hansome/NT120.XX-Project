@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    token_version INT NOT NULL DEFAULT 0,
     role VARCHAR(20) NOT NULL DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -42,8 +43,7 @@ CREATE TABLE IF NOT EXISTS products (
     CONSTRAINT fk_products_category
         FOREIGN KEY (category_id)
         REFERENCES categories(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
+        ON DELETE SET NULL,
 
     CONSTRAINT chk_products_price
         CHECK (price >= 0),
@@ -67,14 +67,12 @@ CREATE TABLE IF NOT EXISTS cart_items (
     CONSTRAINT fk_cart_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        ON DELETE CASCADE,
 
     CONSTRAINT fk_cart_product
         FOREIGN KEY (product_id)
         REFERENCES products(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        ON DELETE CASCADE,
 
     CONSTRAINT chk_cart_quantity
         CHECK (quantity > 0)
@@ -87,14 +85,13 @@ CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     total DECIMAL(10,2) NOT NULL,
-    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    status ENUM('pending','paid','shipped','cancelled')
+    NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_orders_user
         FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        REFERENCES users(id),
 
     CONSTRAINT chk_orders_total
         CHECK (total >= 0)
@@ -112,15 +109,11 @@ CREATE TABLE IF NOT EXISTS order_items (
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id)
-        REFERENCES orders(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        REFERENCES orders(id),
 
     CONSTRAINT fk_order_items_product
         FOREIGN KEY (product_id)
-        REFERENCES products(id)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
+        REFERENCES products(id),
 
     CONSTRAINT chk_order_items_quantity
         CHECK (quantity > 0),

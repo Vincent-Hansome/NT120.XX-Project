@@ -19,6 +19,8 @@ exports.requireAuth = async (req, res, next) => {
     typeof decoded !== 'object' ||
     !Number.isSafeInteger(decoded.id) ||
     decoded.id <= 0 ||
+    !Number.isSafeInteger(decoded.tokenVersion) ||
+    decoded.tokenVersion < 0 ||
     !Number.isSafeInteger(decoded.exp) ||
     decoded.exp <= Math.floor(Date.now() / 1000)
   ) {
@@ -27,12 +29,18 @@ exports.requireAuth = async (req, res, next) => {
 
   let rows;
   try {
-    [rows] = await db.query('SELECT id, role FROM users WHERE id = ?', [decoded.id]);
+    [rows] = await db.query('SELECT id, role, token_version FROM users WHERE id = ?', [decoded.id]);
   } catch {
     return res.status(503).json({ message: 'Authentication service unavailable' });
   }
 
-  if (!Array.isArray(rows) || rows.length !== 1) {
+  if (
+    !Array.isArray(rows) ||
+    rows.length !== 1 ||
+    !Number.isSafeInteger(rows[0].token_version) ||
+    rows[0].token_version < 0 ||
+    decoded.tokenVersion !== rows[0].token_version
+  ) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 

@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { trustedOrigins } = require('./config/trustedOrigins');
 const { csrfProtection } = require('./middlewares/csrfMiddleware');
+const { logControllerError } = require('./utils/controllerLogger');
 
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -38,7 +39,7 @@ app.get('/', (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logControllerError('app', 'unhandledRequest', err);
   res.status(500).json({ message: 'Internal server error' });
 });
 
