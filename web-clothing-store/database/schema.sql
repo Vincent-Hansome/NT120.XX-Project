@@ -1,3 +1,5 @@
+-- Fresh installs only. Existing volumes require reviewed migrations:
+-- database/migrations/README.md (20261028_categories_name_unique).
 CREATE DATABASE IF NOT EXISTS `web-clothing-store`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
@@ -87,7 +89,10 @@ CREATE TABLE IF NOT EXISTS orders (
     total DECIMAL(10,2) NOT NULL,
     status ENUM('pending','paid','shipped','cancelled')
     NOT NULL DEFAULT 'pending',
+    checkout_key CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_orders_checkout UNIQUE (user_id, checkout_key),
 
     CONSTRAINT fk_orders_user
         FOREIGN KEY (user_id)

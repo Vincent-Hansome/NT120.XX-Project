@@ -1,3 +1,4 @@
+const { sendDatabaseError } = require('../utils/databaseAvailability');
 const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const { clearAuthCookie } = require('../config/authCookie');
@@ -16,7 +17,7 @@ exports.getProfile = async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     logControllerError('userController', 'getProfile', err);
-    res.status(500).json({ message: 'Server error' });
+    sendDatabaseError(res, err);
   }
 };
 
@@ -80,10 +81,14 @@ exports.updateProfile = async (req, res) => {
     if (hasCurrentPassword && result.affectedRows !== 1) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (hasCurrentPassword) {
+      clearAuthCookie(res);
+      return res.json({ message: 'Password changed. Please sign in again.', reauthenticate: true });
+    }
     return res.json({ message: 'Profile updated' });
   } catch (err) {
     logControllerError('userController', 'updateProfile', err);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, err);
   }
 };
 
@@ -101,6 +106,6 @@ exports.logout = async (req, res) => {
     return res.json({ message: 'Logged out' });
   } catch (err) {
     logControllerError('userController', 'logout', err);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, err);
   }
 };

@@ -1,0 +1,21 @@
+
+> test:categories:mysql
+> node test/run-category-mysql.cjs
+
+▶ category migration and API on isolated real MySQL
+  ✔ refuses to mutate without a server write fence or with the wrong target (44.8257ms)
+  ✔ legacy collation duplicates retain minimum ID; every link and all business data survive (92.4519ms)
+  ✔ second run is a no-op and an equivalent unique index under another name is accepted (3355.746ms)
+  ✔ create succeeds and duplicate name under the actual collation returns 409 (29.383ms)
+  ✔ rename to an existing name returns 409 and preserves both records (27.1278ms)
+  ✔ two concurrent creates yield exactly one 201 and one 409 (19.4634ms)
+  ✔ a distinct name and an unchanged update succeed (22.807ms)
+✔ category migration and API on isolated real MySQL (3833.0395ms)
+ℹ tests 7
+ℹ suites 1
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3950.3946

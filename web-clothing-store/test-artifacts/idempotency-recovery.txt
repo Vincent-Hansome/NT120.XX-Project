@@ -1,0 +1,15 @@
+
+> test:recovery:mysql
+> node test/checkout-recovery-mysql.cjs
+
+PASS additive migration preserves historical orders and is repeatable
+PASS real server lock-wait timeout -> HTTP 409, rollback intact; ms=1023
+PASS normal checkout succeeds after lock-wait failure
+PASS real InnoDB deadlock -> checkout victim HTTP 409, no partial order
+PASS normal checkout succeeds after deadlock rollback
+PASS response dropped after committed checkout: exactly one durable order
+PASS retry with empty cart returns original order (HTTP 201)
+PASS replay after refill returns original order and preserves the new cart
+PASS new checkout intent uses a new key and creates the next order
+RESULT all lock and response-loss recovery scenarios passed
+Stopped disposable container: nt120-recovery-1793251097586

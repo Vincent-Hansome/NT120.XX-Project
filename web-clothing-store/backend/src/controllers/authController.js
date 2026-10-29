@@ -1,3 +1,4 @@
+const { sendDatabaseError } = require('../utils/databaseAvailability');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
@@ -50,7 +51,7 @@ exports.register = async (req, res) => {
     }
 
     logControllerError('authController', 'register', err);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, err);
   }
 };
 
@@ -91,6 +92,6 @@ exports.login = async (req, res) => {
     return res.json({ message: 'Logged in', user: { id: user.id, name: user.name, role: user.role } });
   } catch (err) {
     logControllerError('authController', 'login', err);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, err);
   }
 };

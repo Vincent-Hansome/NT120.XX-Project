@@ -1,0 +1,15 @@
+
+> test:availability:mysql
+> node test/availability-mysql.cjs
+
+PASS ready returns 200 and catalog works with real MySQL
+PASS test-db real process exits 0 on success, 1 on refused port
+[productController.getAll] failed { code: 'DB_QUERY_TIMEOUT' }
+Paused DB HTTP timings: [{"status":503,"ms":1019},{"status":503,"ms":3009}]
+PASS paused DB yields bounded ready/catalog 503 and recovers after unpause
+PASS full pool bounds queue at 50, expires waiters and recovers without executing stale SQL
+PASS transaction query timeout closes socket; partial write rolls back after DB resumes
+[productController.getAll] failed { code: 'ECONNREFUSED' }
+PASS stopped DB yields 503 without exposing connection internals
+RESULT 6/6 availability checks passed
+Stopped disposable container: nt120-availability-1793252006017

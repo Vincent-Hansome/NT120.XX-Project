@@ -8,6 +8,13 @@
   let csrfTokenExpiresAt = 0;
   let csrfTokenRequest = null;
 
+  function responseError(res, data, fallback) {
+    const error = new Error(res.status >= 500 ? 'Máy chủ gặp lỗi. Vui lòng thử lại sau.' : data.message || fallback);
+    error.status = res.status;
+    error.data = data;
+    return error;
+  }
+
   async function getCsrfToken() {
     if (csrfToken && Date.now() < csrfTokenExpiresAt - 30000) return csrfToken;
 
@@ -19,7 +26,7 @@
         .then(async (res) => {
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.csrfToken || !data.expiresAt) {
-            throw new Error(data.message || 'Không thể xác thực yêu cầu. Vui lòng thử lại.');
+            throw responseError(res, data, 'Không thể xác thực yêu cầu. Vui lòng thử lại.');
           }
           csrfToken = data.csrfToken;
           csrfTokenExpiresAt = data.expiresAt;
@@ -51,10 +58,10 @@
         headers
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+      if (!res.ok) throw responseError(res, data, 'Có lỗi xảy ra. Vui lòng thử lại.');
       return data;
     },
-    money(value) { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(value) || 0); },
+    money(value) { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(value) || 0); },
     escape(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   };
 })();

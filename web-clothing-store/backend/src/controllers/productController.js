@@ -1,6 +1,9 @@
+const { sendDatabaseError, isDatabaseUnavailable } = require('../utils/databaseAvailability');
 const fs = require('node:fs/promises');
 const db = require('../config/db');
 const { logControllerError } = require('../utils/controllerLogger');
+const { BusinessError, withTransaction, sendTransactionError } = require('../utils/transaction');
+const { productRevision, withRevision } = require('../utils/productRevision');
 
 const MAX_INT = 2_147_483_647;
 const MAX_PRICE = 99_999_999.99;
@@ -119,19 +122,19 @@ async function rejectRequest(req, res, status, message) {
   return res.status(status).json({ message });
 }
 
-async function categoryExists(categoryId) {
+async function categoryExists(categoryId, connection = db) {
   if (categoryId === null) return true;
-  const [rows] = await db.query('SELECT id FROM categories WHERE id = ?', [categoryId]);
+  const [rows] = await connection.query('SELECT id FROM categories WHERE id = ?', [categoryId]);
   return rows.length > 0;
 }
 
 exports.getAll = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM products');
-    res.json(rows);
+    res.json(rows.map(withRevision));
   } catch (error) {
     logControllerError('productController', 'getAll', error);
-    res.status(500).json({ message: 'Server error' });
+    sendDatabaseError(res, error);
   }
 };
 
@@ -139,10 +142,10 @@ exports.getById = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
     if (rows.length === 0) return res.status(404).json({ message: 'Not found' });
-    return res.json(rows[0]);
+    return res.json(withRevision(rows[0]));
   } catch (error) {
     logControllerError('productController', 'getById', error);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, error);
   }
 };
 
@@ -163,45 +166,72 @@ exports.create = async (req, res) => {
     );
     return res.status(201).json({ message: 'Product created', id: result.insertId });
   } catch (error) {
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      return rejectRequest(req, res, 400, 'Category id does not refer to an existing category.');
+    }
     logControllerError('productController', 'create', error);
-    return rejectRequest(req, res, 500, 'Server error');
+    return rejectRequest(req, res, isDatabaseUnavailable(error) ? 503 : 500, 'Server error');
   }
 };
 
 exports.update = async (req, res) => {
-  const validation = validateProduct(req.body);
+  const { revision, ...body } = req.body || {};
+  const validation = validateProduct(body);
   if (validation.error) return rejectRequest(req, res, 400, validation.error);
 
   try {
-    if (!(await categoryExists(validation.value.category_id))) {
-      return rejectRequest(req, res, 400, 'Category id does not refer to an existing category.');
-    }
+    await withTransaction(async connection => {
+      const [rows] = await connection.query('SELECT * FROM products WHERE id = ? FOR UPDATE', [req.params.id]);
+      if (!rows.length) throw new BusinessError(404, 'Product not found');
+      if (revision === undefined) throw new BusinessError(428, 'Reload the product before editing; a revision is required.');
+      if (typeof revision !== 'string' || !/^[a-f0-9]{64}$/.test(revision)) {
+        throw new BusinessError(400, 'Invalid product revision');
+      }
+      if (revision !== productRevision(rows[0])) {
+        throw new BusinessError(409, 'Product or stock has changed. Reload the product and review your changes before saving.');
+      }
+      if (!(await categoryExists(validation.value.category_id, connection))) {
+        throw new BusinessError(400, 'Category id does not refer to an existing category.');
+      }
 
-    const { name, description, price, stock, size, color, category_id } = validation.value;
-    const fields = [name, description, price, stock, size, color, category_id];
-    let query = 'UPDATE products SET name=?, description=?, price=?, stock=?, size=?, color=?, category_id=?';
+      const { name, description, price, stock, size, color, category_id } = validation.value;
+      const fields = [name, description, price, stock, size, color, category_id];
+      let query = 'UPDATE products SET name=?, description=?, price=?, stock=?, size=?, color=?, category_id=?';
 
-    if (req.file) {
-      query += ', image_url=?';
-      fields.push('/uploads/' + req.file.filename);
-    }
-    query += ' WHERE id=?';
-    fields.push(req.params.id);
+      if (req.file) {
+        query += ', image_url=?';
+        fields.push('/uploads/' + req.file.filename);
+      }
+      query += ' WHERE id=?';
+      fields.push(req.params.id);
 
-    await db.query(query, fields);
+      await connection.query(query, fields);
+    });
     return res.json({ message: 'Product updated' });
   } catch (error) {
+    // Cleanup precedes every failed update, including stale and missing rows.
+    if (error instanceof BusinessError) return rejectRequest(req, res, error.status, error.message);
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      return rejectRequest(req, res, 400, 'Category id does not refer to an existing category.');
+    }
+    await removeUploadedImage(req.file).catch(cleanupError => logControllerError('productController', 'update.cleanupUpload', cleanupError));
+    if (sendTransactionError(res, error)) return;
     logControllerError('productController', 'update', error);
-    return rejectRequest(req, res, 500, 'Server error');
+    return rejectRequest(req, res, isDatabaseUnavailable(error) ? 503 : 500, 'Server error');
   }
 };
 
 exports.remove = async (req, res) => {
   try {
-    await db.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    const [result] = await db.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Product not found' });
     return res.json({ message: 'Product deleted' });
   } catch (error) {
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ message: 'Product belongs to an order and cannot be deleted. Order history has been preserved.' });
+    }
+    if (sendTransactionError(res, error)) return;
     logControllerError('productController', 'remove', error);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, error);
   }
 };

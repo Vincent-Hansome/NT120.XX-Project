@@ -7,7 +7,7 @@
     <label>Tên sản phẩm<input name="name" required maxlength="255" autocomplete="off"></label>
     <label>Mô tả<textarea name="description" rows="4" maxlength="10000"></textarea></label>
     <div class="admin-form-grid">
-      <label>Giá (₫)<input name="price" type="number" min="0" step="1" required></label>
+      <label>Giá (₫)<input name="price" type="number" min="0" max="99999999.99" step="0.01" required></label>
       <label>Số lượng tồn kho<input name="stock" type="number" min="0" step="1" value="0" required></label>
       <label>Kích thước<input name="size" maxlength="50" placeholder="Ví dụ: S / M / L"></label>
       <label>Màu sắc<input name="color" maxlength="50" placeholder="Ví dụ: Xanh rêu"></label>

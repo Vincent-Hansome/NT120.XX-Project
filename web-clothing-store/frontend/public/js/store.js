@@ -33,8 +33,20 @@
   document.addEventListener('click', async e => {
     const button = e.target.closest('[data-add-product]'); if (!button) return;
     button.disabled = true;
+    setMessage(button.parentElement.querySelector('[data-quick-add-message]'), '');
     try { await A.request('/cart', { method: 'POST', body: JSON.stringify({ product_id: button.dataset.addProduct, quantity: 1 }) }); button.textContent = '✓ Đã thêm'; await refreshBadge(); setTimeout(() => { if (button.isConnected) { button.textContent = '＋ Thêm vào giỏ'; button.disabled = false; } }, 1300); }
-    catch { window.location.href = '/login'; }
+    catch (err) {
+      if (err.status === 401) { window.location.assign('/login'); return; }
+      let message = button.parentElement.querySelector('[data-quick-add-message]');
+      if (!message) {
+        message = document.createElement('p');
+        message.dataset.quickAddMessage = '';
+        message.setAttribute('role', 'alert');
+        button.parentElement.appendChild(message);
+      }
+      setMessage(message, err.status === 403 ? 'Không thể xác thực CSRF. Hãy tải lại trang và thử lại.' : err.message, true);
+      button.disabled = false;
+    }
   });
 
   const detail = document.querySelector('[data-product-detail]');
@@ -50,7 +62,7 @@
       const quantity = detail.querySelector('[data-quantity]'), add = detail.querySelector('[data-add-detail]'); quantity.textContent = qty; add.disabled = !stock;
       detail.querySelector('[data-quantity-minus]').onclick = () => { qty = Math.max(1, qty - 1); quantity.textContent = qty; };
       detail.querySelector('[data-quantity-plus]').onclick = () => { qty = Math.min(stock || 99, qty + 1); quantity.textContent = qty; };
-      add.onclick = async () => { try { await A.request('/cart', { method: 'POST', body: JSON.stringify({ product_id: p.id, quantity: qty }) }); add.textContent = '✓ Đã thêm vào giỏ'; await refreshBadge(); setMessage(msg, 'Sản phẩm đã được thêm vào túi đồ.'); setTimeout(() => { add.textContent = 'Thêm vào giỏ →'; }, 1200); } catch (e) { setMessage(msg, `${e.message} · Hãy đăng nhập để tiếp tục.`, true); } };
+      add.onclick = async () => { try { await A.request('/cart', { method: 'POST', body: JSON.stringify({ product_id: p.id, quantity: qty }) }); add.textContent = '✓ Đã thêm vào giỏ'; await refreshBadge(); setMessage(msg, 'Sản phẩm đã được thêm vào túi đồ.'); setTimeout(() => { add.textContent = 'Thêm vào giỏ →'; }, 1200); } catch (e) { if (e.status === 401) location.assign('/login'); else setMessage(msg, e.message, true); } };
     } catch (e) { setMessage(msg, e.message, true); }
   })();
 
@@ -74,6 +86,9 @@
     });
   })();
   const authForm = document.querySelector('[data-auth-form]');
+  if (authForm?.dataset.mode === 'login' && new URLSearchParams(location.search).get('reason') === 'password-changed') {
+    setMessage(authForm.querySelector('[data-auth-message]'), 'Mật khẩu đã được cập nhật. Các phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại.');
+  }
   if (authForm) authForm.addEventListener('submit', async e => {
     e.preventDefault(); const message = authForm.querySelector('[data-auth-message]'), button = authForm.querySelector('button[type=submit]'); button.disabled = true; setMessage(message, '');
     const form = new FormData(authForm), payload = Object.fromEntries(form.entries()), mode = authForm.dataset.mode;
@@ -106,7 +121,8 @@
       try {
         await A.request('/users/me',{method:'PUT',body:JSON.stringify(payload)});
         passwordForm.reset();
-        setMessage(passwordMessage,'Mật khẩu đã được cập nhật.');
+        setMessage(passwordMessage,'Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.');
+        location.assign('/login?reason=password-changed');
       } catch(err) {
         setMessage(passwordMessage,err.message,true);
       } finally {
@@ -133,9 +149,46 @@
   const checkout = document.querySelector('[data-checkout-page]');
   if (checkout) (async () => {
     const message=checkout.querySelector('[data-checkout-message]'), button=checkout.querySelector('[data-place-order]');
-    try { const rows=await A.request('/cart'); const total=rows.reduce((n,p)=>n+Number(p.price)*Number(p.quantity),0); checkout.querySelector('[data-checkout-count]').textContent=`${rows.reduce((n,p)=>n+Number(p.quantity),0)} món`; checkout.querySelector('[data-checkout-subtotal]').textContent=A.money(total); checkout.querySelector('[data-checkout-total]').textContent=A.money(total); if(!rows.length){button.disabled=true;setMessage(message,'Giỏ hàng đang trống. Hãy chọn vài món trước nhé.');} }
-    catch(err){button.disabled=true;setMessage(message,`${err.message} — Vui lòng đăng nhập trước.`,true);}
-    button.addEventListener('click',async()=>{button.disabled=true;button.textContent='Đang tạo đơn…';try{await A.request('/orders',{method:'POST',body:JSON.stringify({})});location.assign('/orders');}catch(err){setMessage(message,err.message,true);button.disabled=false;button.textContent='Xác nhận đặt hàng →';}});
+    let ownerId, storageKey, pendingKey, loaded=false;
+    button.disabled=true;
+    function newKey() {
+      const bytes=window.crypto.getRandomValues(new Uint8Array(16));
+      bytes[6]=(bytes[6]&15)|64; bytes[8]=(bytes[8]&63)|128;
+      const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+      return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+    }
+    try {
+      const user=await A.request('/users/me'); ownerId=user.id;
+      storageKey=`moc-checkout:${ownerId}`;
+      pendingKey=window.sessionStorage.getItem(storageKey);
+      const rows=await A.request('/cart');
+      const total=rows.reduce((n,p)=>n+Number(p.price)*Number(p.quantity),0);
+      checkout.querySelector('[data-checkout-count]').textContent=`${rows.reduce((n,p)=>n+Number(p.quantity),0)} món`;
+      checkout.querySelector('[data-checkout-subtotal]').textContent=A.money(total);
+      checkout.querySelector('[data-checkout-total]').textContent=A.money(total);
+      loaded=true;
+      button.disabled=!rows.length&&!pendingKey;
+      if(pendingKey){button.textContent='Kiểm tra lại đơn hàng →';setMessage(message,'Lần đặt trước chưa được xác nhận. Bấm thử lại để hoàn tất; nếu đã thành công, hệ thống sẽ trả lại đơn cũ.');}
+      else if(!rows.length){setMessage(message,'Giỏ hàng đang trống. Hãy chọn vài món trước nhé.');}
+    } catch(err){setMessage(message,`${err.message} — Không thể chuẩn bị thanh toán. Vui lòng tải lại trang.`,true);}
+    button.addEventListener('click',async()=>{
+      if(!loaded||button.disabled)return;
+      button.disabled=true;button.textContent='Đang kiểm tra đơn…';
+      try{
+        const user=await A.request('/users/me');
+        if(user.id!==ownerId)throw new Error('Tài khoản đã thay đổi. Vui lòng tải lại trang.');
+        if(!pendingKey){
+          const key=newKey();
+          window.sessionStorage.setItem(storageKey,key);
+          pendingKey=key;
+        }
+        await A.request('/orders',{method:'POST',headers:{'Idempotency-Key':pendingKey},body:JSON.stringify({})});
+        // Remove only after a definitive success. Network/5xx failures retain the
+        // same key across retry, reload and cart changes in this browser tab.
+        try{window.sessionStorage.removeItem(storageKey);}catch{}
+        location.assign('/orders');
+      }catch(err){setMessage(message,`${err.message}${pendingKey?' — Bấm thử lại để kiểm tra cùng lần đặt hàng.':''}`,true);button.disabled=false;button.textContent=pendingKey?'Kiểm tra lại đơn hàng →':'Xác nhận đặt hàng →';}
+    });
   })();
 
   const adminOrders=document.querySelector('[data-admin-orders]');
@@ -174,11 +227,11 @@
     const toggle=adminProducts.querySelector('[data-toggle-product-form]');
     const categorySelect=adminProducts.querySelector('[data-category-select]');
     const submitButton=form.querySelector('[type="submit"]');
-    let editingId=null;
+    let editingId=null, editingRevision=null;
     const renderProducts=async()=>{
       try {
         const rows=await A.request('/products');
-        target.innerHTML=rows.map((p,i)=>`<div class="admin-product"><img src="${A.escape(productImage(p,i))}" alt=""><span>${A.escape(p.name)}</span><b>${A.money(p.price)}</b><small>Còn ${A.escape(p.stock)} món</small><div class="admin-product-actions-row"><button type="button" data-edit-product="${p.id}" data-name="${A.escape(p.name)}" data-description="${A.escape(p.description||'')}" data-price="${p.price}" data-stock="${p.stock}" data-size="${A.escape(p.size||'')}" data-color="${A.escape(p.color||'')}" data-category="${p.category_id||''}">Sửa</button><button type="button" data-delete-product="${p.id}">Xoá</button></div></div>`).join('')||'<p>Chưa có sản phẩm.</p>';
+        target.innerHTML=rows.map((p,i)=>`<div class="admin-product"><img src="${A.escape(productImage(p,i))}" alt=""><span>${A.escape(p.name)}</span><b>${A.money(p.price)}</b><small>Còn ${A.escape(p.stock)} món</small><div class="admin-product-actions-row"><button type="button" data-edit-product="${p.id}" data-revision="${A.escape(p.revision)}" data-name="${A.escape(p.name)}" data-description="${A.escape(p.description||'')}" data-price="${p.price}" data-stock="${p.stock}" data-size="${A.escape(p.size||'')}" data-color="${A.escape(p.color||'')}" data-category="${p.category_id||''}">Sửa</button><button type="button" data-delete-product="${p.id}">Xoá</button></div></div>`).join('')||'<p>Chưa có sản phẩm.</p>';
       } catch(err) { setMessage(message,err.message,true); }
     };
     renderProducts();
@@ -186,14 +239,16 @@
       categorySelect.innerHTML='<option value="">Không phân loại</option>'+rows.map(c=>`<option value="${A.escape(c.id)}">${A.escape(c.name)}</option>`).join('');
     }).catch(err=>{ setMessage(message,`Không thể tải danh mục: ${err.message}`,true); });
     const openForm=()=>{ form.hidden=false; toggle.setAttribute('aria-expanded','true'); form.querySelector('[name="name"]').focus(); };
-    const closeForm=()=>{ form.reset(); form.hidden=true; toggle.setAttribute('aria-expanded','false'); editingId=null; submitButton.textContent='Lưu sản phẩm →'; };
+    const closeForm=()=>{ form.reset(); form.hidden=true; toggle.setAttribute('aria-expanded','false'); editingId=null; editingRevision=null; submitButton.textContent='Lưu sản phẩm →'; };
     toggle.addEventListener('click',()=>{ if(!form.hidden){ closeForm(); return; } editingId=null; openForm(); });
     adminProducts.querySelector('[data-cancel-product-form]').addEventListener('click',closeForm);
     target.addEventListener('click', async e => {
       const editBtn=e.target.closest('[data-edit-product]');
       const delBtn=e.target.closest('[data-delete-product]');
       if (editBtn) {
+        form.reset();
         editingId=editBtn.dataset.editProduct;
+        editingRevision=editBtn.dataset.revision;
         form.elements.name.value=editBtn.dataset.name;
         form.elements.description.value=editBtn.dataset.description;
         form.elements.price.value=editBtn.dataset.price;
@@ -216,6 +271,7 @@
       submitButton.disabled=true; setMessage(message,'');
       const payload=new FormData(form);
       if(!payload.get('category_id')) payload.delete('category_id');
+      if(editingId) payload.set('revision', editingRevision);
       try {
         if (editingId) {
           await A.request(`/products/${editingId}`,{method:'PUT',body:payload});
@@ -226,7 +282,10 @@
         }
         closeForm();
         await renderProducts();
-      } catch(err) { setMessage(message,err.message,true); }
+      } catch(err) {
+        setMessage(message, err.status === 409 && editingId ? 'Sản phẩm hoặc tồn kho đã thay đổi. Nội dung đang nhập được giữ lại. Bấm Sửa trong danh sách mới để tải dữ liệu hiện tại và kiểm tra trước khi lưu lại.' : err.message, true);
+        if(err.status === 409 && editingId) await renderProducts();
+      }
       finally { submitButton.disabled=false; }
     });
   }

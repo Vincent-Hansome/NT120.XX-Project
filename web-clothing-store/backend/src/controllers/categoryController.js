@@ -1,5 +1,7 @@
+const { sendDatabaseError } = require('../utils/databaseAvailability');
 const db = require('../config/db');
 const { logControllerError } = require('../utils/controllerLogger');
+const { BusinessError, withTransaction, sendTransactionError } = require('../utils/transaction');
 
 function validateName(value) {
   if (typeof value !== 'string') return { error: 'Category name must be text.' };
@@ -30,7 +32,7 @@ exports.getAll = async (req, res) => {
     res.json(rows);
   } catch (error) {
     logControllerError('categoryController', 'getAll', error);
-    res.status(500).json({ message: 'Server error' });
+    sendDatabaseError(res, error);
   }
 };
 
@@ -44,7 +46,7 @@ exports.create = async (req, res) => {
   } catch (error) {
     if (isDuplicateName(error)) return res.status(409).json({ message: 'A category with this name already exists.' });
     logControllerError('categoryController', 'create', error);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, error);
   }
 };
 
@@ -53,21 +55,27 @@ exports.update = async (req, res) => {
   if (validation.error) return res.status(400).json({ message: validation.error });
 
   try {
-    await db.query('UPDATE categories SET name = ? WHERE id = ?', [validation.name, req.params.id]);
+    await withTransaction(async connection => {
+      const [rows] = await connection.query('SELECT id FROM categories WHERE id = ? FOR UPDATE', [req.params.id]);
+      if (!rows.length) throw new BusinessError(404, 'Category not found');
+      await connection.query('UPDATE categories SET name = ? WHERE id = ?', [validation.name, req.params.id]);
+    });
     return res.json({ message: 'Category updated' });
   } catch (error) {
     if (isDuplicateName(error)) return res.status(409).json({ message: 'A category with this name already exists.' });
+    if (sendTransactionError(res, error)) return;
     logControllerError('categoryController', 'update', error);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, error);
   }
 };
 
 exports.remove = async (req, res) => {
   try {
-    await db.query('DELETE FROM categories WHERE id = ?', [req.params.id]);
+    const [result] = await db.query('DELETE FROM categories WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Category not found' });
     return res.json({ message: 'Category deleted' });
   } catch (error) {
     logControllerError('categoryController', 'remove', error);
-    return res.status(500).json({ message: 'Server error' });
+    return sendDatabaseError(res, error);
   }
 };

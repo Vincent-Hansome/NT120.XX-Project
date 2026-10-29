@@ -1,0 +1,20 @@
+Backup created: D:\Project\NT120\web-clothing-store-backups\checkout-2026-10-29T05-31-28-357Z
+Checkout idempotency migration complete
+Checkout idempotency migration complete
+Backup restored and additive migration rehearsed twice; all original row hashes match.
+Checkout idempotency migration complete
+ Container docker-backend-run-39d16f4a0b62 Creating 
+ Container docker-backend-run-39d16f4a0b62 Created 
+
+ Container webapp_backend Recreate 
+ Container webapp_backend Recreated 
+ Container webapp_frontend Recreate 
+ Container webapp_frontend Recreated 
+ Container webapp_backend Starting 
+ Container webapp_backend Started 
+ Container webapp_backend Waiting 
+ Container webapp_backend Healthy 
+ Container webapp_frontend Starting 
+ Container webapp_frontend Started 
+Backend/frontend healthy. Backup: D:\Project\NT120\web-clothing-store-backups\checkout-2026-10-29T05-31-28-357Z
+Stopped backup rehearsal container: nt120-checkout-backup-1793251888358

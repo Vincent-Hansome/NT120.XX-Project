@@ -1,0 +1,543 @@
+{
+  "id": "nt120-local-20261029-v1",
+  "createdAt": "2026-10-29T05:42:48.111Z",
+  "timezone": "Asia/Saigon",
+  "gitHead": "2eeae6d40abe456744f252deacfd18aa3ce161b8",
+  "uncommittedWorkspace": true,
+  "scope": "local HTTP baseline with documented accepted limitations",
+  "backupDirectory": "D:\\Project\\NT120\\web-clothing-store-backups\\checkout-2026-10-29T05-31-28-357Z",
+  "sqlSha256": "d90f9d1581afd8b9ede84ae3c78a183d40e917ecebf196ab4d52158f00e7be28",
+  "images": {
+    "webapp_backend": {
+      "imageId": "sha256:54b772d4bcbfd0c91461c8af90226335e75adf9b8c15fb0b79e5989bcfffa22e",
+      "configuredImage": "docker-backend",
+      "health": "healthy"
+    },
+    "webapp_frontend": {
+      "imageId": "sha256:0f9c28befcdee157b0822a27076fe07c0eedb3799c6269b7016bd761b6a5dc3c",
+      "configuredImage": "docker-frontend",
+      "health": "healthy"
+    },
+    "webapp_db": {
+      "imageId": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "configuredImage": "mysql:8.0",
+      "health": "healthy"
+    },
+    "webapp_gateway": {
+      "imageId": "sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2",
+      "configuredImage": "nginx:alpine",
+      "health": "healthy"
+    }
+  },
+  "nodeBaseDigests": [
+    "node@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53"
+  ],
+  "fileCount": 101,
+  "files": [
+    {
+      "path": ".dockerignore",
+      "bytes": 155,
+      "sha256": "aaab8f3d15173544cb17e6996b299765fca0f0d3f08aac334e5b360a479666cb"
+    },
+    {
+      "path": "backend/.gitignore",
+      "bytes": 57,
+      "sha256": "d3b4f0f7649d68e234fc479382e000f2a0186e00d15421721f642b2b4e132c5e"
+    },
+    {
+      "path": "backend/package-lock.json",
+      "bytes": 78248,
+      "sha256": "3c8769e76f63a97b6e4c89d09235db7c8aca67be145a534626ac1f3033bd9242"
+    },
+    {
+      "path": "backend/package.json",
+      "bytes": 679,
+      "sha256": "f514204be14bc241d7695e2d895b7a7a3ee55f8ab5402609d4ad3be333465123"
+    },
+    {
+      "path": "backend/scripts/category-db-worker.cjs",
+      "bytes": 9546,
+      "sha256": "9fb51841deca1ccc047d94beadb1093c4d98492747b2d2f0bb8bacc493b0c042"
+    },
+    {
+      "path": "backend/scripts/category-maintenance.cjs",
+      "bytes": 11586,
+      "sha256": "562412dc762e52e92a367254c25f7743bc90e57f43655c89a6905bd7ac4dfbbf"
+    },
+    {
+      "path": "backend/scripts/migrate-checkout.cjs",
+      "bytes": 1898,
+      "sha256": "2fa6ce9da70a74426d45f70474c9970a710f85bca44b218d9fb97eae6d9bc16a"
+    },
+    {
+      "path": "backend/server.js",
+      "bytes": 213,
+      "sha256": "11e3a005b64f7e38e7ed7a197b8098970146e33b7d4a13bb93d92813e92ac6dd"
+    },
+    {
+      "path": "backend/src/app.js",
+      "bytes": 2150,
+      "sha256": "fd9fce5aa1eb4644fd1200cd4e85ce6055be4632df32adc661aeb2b61a8d6773"
+    },
+    {
+      "path": "backend/src/config/authCookie.js",
+      "bytes": 540,
+      "sha256": "15973d864c8d9bfb86dcbda33717fb3b6457cc44d2ccefb07b1a6de1f5ce8653"
+    },
+    {
+      "path": "backend/src/config/boundedDatabase.js",
+      "bytes": 4038,
+      "sha256": "a4fedcb6bd52a0ed01be137d151c67470a6b74329672cf9c8b610a83d4149873"
+    },
+    {
+      "path": "backend/src/config/db.js",
+      "bytes": 475,
+      "sha256": "3342e70a8df1c95bb3932f1eaa9aebaf9e279db601e8d4ba1a4e2ee70494f4c6"
+    },
+    {
+      "path": "backend/src/config/env.js",
+      "bytes": 983,
+      "sha256": "b9802fadc82e4f2165845a55f01e349e1a78c89c2b5b78561243cf99b4b54c66"
+    },
+    {
+      "path": "backend/src/config/trustedOrigins.js",
+      "bytes": 1227,
+      "sha256": "43472318f40a90b4d1c938e742a3e5e59887d00a68122c061c1f54f3f77f0ed0"
+    },
+    {
+      "path": "backend/src/config/uploads.js",
+      "bytes": 300,
+      "sha256": "e98f7442b7101ab4cc958cb18f7f55200f0f42cc021fc17716237b76e080851b"
+    },
+    {
+      "path": "backend/src/controllers/authController.js",
+      "bytes": 3393,
+      "sha256": "aa804d02a5d63d023097cac581859a3d2e384b9653f251abb29891c8550fad9f"
+    },
+    {
+      "path": "backend/src/controllers/cartController.js",
+      "bytes": 5034,
+      "sha256": "2dcc4865995a899e88b29da4df5de62e90200d83f92593d614965d8a922b962c"
+    },
+    {
+      "path": "backend/src/controllers/categoryController.js",
+      "bytes": 3255,
+      "sha256": "dab19f2da70580d9da52b64644c8640e53751f33de91d7c87f57a077670a3490"
+    },
+    {
+      "path": "backend/src/controllers/orderController.js",
+      "bytes": 5005,
+      "sha256": "0ad328204be5d16020d2880bcf412625b5deec81703a54fcc579f9ad5f781168"
+    },
+    {
+      "path": "backend/src/controllers/productController.js",
+      "bytes": 9624,
+      "sha256": "64a5b396f26c236b1e90bfeb3da30788a1bbb5d2aa0f82c563aa11f4fd7a8ffd"
+    },
+    {
+      "path": "backend/src/controllers/userController.js",
+      "bytes": 4005,
+      "sha256": "3447ae96dbde96912e806b3d58e9623d6cd4c49f347d7903e5690c82524a464d"
+    },
+    {
+      "path": "backend/src/middlewares/authMiddleware.js",
+      "bytes": 1656,
+      "sha256": "28b6160ac74a58207a1409d6b08667552e13968e7325dbce0512ad8349647d56"
+    },
+    {
+      "path": "backend/src/middlewares/authRateLimitMiddleware.js",
+      "bytes": 5765,
+      "sha256": "250391e1b04257b5f17c6985afd23d0797462f8bfa8ac852375aa4c92b31005c"
+    },
+    {
+      "path": "backend/src/middlewares/csrfMiddleware.js",
+      "bytes": 1761,
+      "sha256": "1b7bd72f57d3d03c3e114cfc00d86f7d57dc9b71db787fe800c20ef8b1f804ee"
+    },
+    {
+      "path": "backend/src/middlewares/idValidationMiddleware.js",
+      "bytes": 415,
+      "sha256": "013e68553c46ba8f8dbf029dd3ca6c19c7cc908d8445ae4dfeb500b6865d0f98"
+    },
+    {
+      "path": "backend/src/middlewares/uploadMiddleware.js",
+      "bytes": 5267,
+      "sha256": "c6a9e86e0a1dfca8d946f78f37cd9afbb2a59bcaad5cf64d23bf918c0b0a4e40"
+    },
+    {
+      "path": "backend/src/routes/authRoutes.js",
+      "bytes": 506,
+      "sha256": "0ac9044bbcd3fef079bb9dc773f12135cdf47967f4ac432d758592ad6891eaab"
+    },
+    {
+      "path": "backend/src/routes/cartRoutes.js",
+      "bytes": 585,
+      "sha256": "a2eef62f69ac02c62d9f1417de3a78dd93e8c1cbe7e91186999cb8e434a1ab38"
+    },
+    {
+      "path": "backend/src/routes/categoryRoutes.js",
+      "bytes": 632,
+      "sha256": "409c3e622a093b09588ddc2115d06e9fd27cb01715a887434741c2df3b3a7f00"
+    },
+    {
+      "path": "backend/src/routes/orderRoutes.js",
+      "bytes": 722,
+      "sha256": "f11056f7848c623239bc2a24b044f71b7eb1764b105e3120fcb730e470f0f1fc"
+    },
+    {
+      "path": "backend/src/routes/productRoutes.js",
+      "bytes": 765,
+      "sha256": "6ae8aae95bdcdfdd7e090db77349c522038382013f343e76a7c370e7f02f8b92"
+    },
+    {
+      "path": "backend/src/routes/userRoutes.js",
+      "bytes": 412,
+      "sha256": "c72a15dffa76f80e33185aa86204220f96f397a02cdbeaf33e7ec3336b0cdfb5"
+    },
+    {
+      "path": "backend/src/utils/authValidation.js",
+      "bytes": 1917,
+      "sha256": "afbd9cfe3d65f65d7b5c8ae40cf1bb231bdfa4ca7d82b27a7f56d74128a55a48"
+    },
+    {
+      "path": "backend/src/utils/controllerLogger.js",
+      "bytes": 477,
+      "sha256": "96dc97ca3936bb30859373da4ac60efd76e37d3106b6ae21ce39d450a67a1b16"
+    },
+    {
+      "path": "backend/src/utils/databaseAvailability.js",
+      "bytes": 818,
+      "sha256": "e1c69eee17c00635b6eb19c412a28738ddf722a70fbc310185aac0cc070e3235"
+    },
+    {
+      "path": "backend/src/utils/money.js",
+      "bytes": 493,
+      "sha256": "88e5f530099e6db07a499c22eb4c86cd907a54094338e589db8b702470285d01"
+    },
+    {
+      "path": "backend/src/utils/productRevision.js",
+      "bytes": 719,
+      "sha256": "4e334121f40b2d14c78db80375ac97c7cbd588e70b23e5ad900ad1963c894b7c"
+    },
+    {
+      "path": "backend/src/utils/transaction.js",
+      "bytes": 1781,
+      "sha256": "6fae2fa53cbf5c57b5e94a8640e1859d037f1b5d1d0bb12911b5fa49b9ba357b"
+    },
+    {
+      "path": "backend/test-db.js",
+      "bytes": 794,
+      "sha256": "b2d586de76b2c689426bd87e763c3ce96efd7552407c072917160e16ec80c314"
+    },
+    {
+      "path": "backend/test/authentication.test.js",
+      "bytes": 68995,
+      "sha256": "238ad5b562a21ceb0c0c3c57132815d9dbc7628db32c95d0dba038cc56402361"
+    },
+    {
+      "path": "backend/test/availability-mysql.cjs",
+      "bytes": 6883,
+      "sha256": "536c6967a0d66ad4897fd5e341c8a8d413cf3e834a6b036c4dd5fef783d9d862"
+    },
+    {
+      "path": "backend/test/category-inspect.cjs",
+      "bytes": 2650,
+      "sha256": "e94dd36f330f30404e8b94e0920c3fc044d5175ffa0ae46cf4735242aeaa5e7d"
+    },
+    {
+      "path": "backend/test/category-migration.test.js",
+      "bytes": 8798,
+      "sha256": "4227990f567de164632c738c8b120035cc24de70ab27bbc9b28e0cdcc2abc23b"
+    },
+    {
+      "path": "backend/test/checkout-recovery-mysql.cjs",
+      "bytes": 11326,
+      "sha256": "7237aaac0bfbfb59f1303c13351f572a049720c642f7f21c64021192d9dbf3c5"
+    },
+    {
+      "path": "backend/test/client.test.js",
+      "bytes": 14315,
+      "sha256": "6bc4afc885db25e3ce2fd5b236d1b6af2b5c39d57dfb4499f9397ca257558f09"
+    },
+    {
+      "path": "backend/test/database-availability.test.js",
+      "bytes": 5558,
+      "sha256": "c408676fe6e451ca8d7b714d29e13ce25d20454a1476910558a049902a2ae81e"
+    },
+    {
+      "path": "backend/test/mysql.test.js",
+      "bytes": 25523,
+      "sha256": "6a2712dbea01b017444b1c69dc21401621caa0339cd3d914bf08b74526729e4b"
+    },
+    {
+      "path": "backend/test/README.md",
+      "bytes": 8062,
+      "sha256": "007c451fee9df61478e4f3184c4cf5e43285d1cd030f94427f6319dc65c2ed94"
+    },
+    {
+      "path": "backend/test/run-category-mysql.cjs",
+      "bytes": 377,
+      "sha256": "e8e2e785a44212183bf1a187cf0083a987caaea0aff8c1e9f526133247993379"
+    },
+    {
+      "path": "backend/test/run-mysql.cjs",
+      "bytes": 355,
+      "sha256": "5cda7b5937fe66cff66bf37c09c46dc31ccc401eb911a0ccbffee2aaad32067d"
+    },
+    {
+      "path": "backend/test/serve-ui.cjs",
+      "bytes": 2565,
+      "sha256": "493243a17acffd0a6c3900b1984db47d2ebb3355b094f63796e9d83e9ab70d9c"
+    },
+    {
+      "path": "backend/test/transaction.test.js",
+      "bytes": 1973,
+      "sha256": "d5d0c96d80967305e22948d67ddbde991a646045e2e9c49bac7ace0efa1bde56"
+    },
+    {
+      "path": "database/migrations/20261020_add_users_token_version.sql",
+      "bytes": 167,
+      "sha256": "3f4edd89d140fb7acea5c97c033304f70f03fb2f163d7930f4b23143a11d1ff3"
+    },
+    {
+      "path": "database/migrations/20261028_categories_name_unique.cjs",
+      "bytes": 8939,
+      "sha256": "22e21f21ff040241cd112f32f83374b03ae1d2b8399340f6d1d7c6b180afaeac"
+    },
+    {
+      "path": "database/migrations/20261029_checkout_idempotency.cjs",
+      "bytes": 72,
+      "sha256": "3a6fbf2a16b3a7047fb7b750a05348590c34aaba3d012b05902dfa20f83b515e"
+    },
+    {
+      "path": "database/migrations/README.md",
+      "bytes": 15510,
+      "sha256": "dd78548ff068991a1f730e39562eeeeb1ef136e9ee4b81352294556971e8fb3a"
+    },
+    {
+      "path": "database/schema.sql",
+      "bytes": 3531,
+      "sha256": "065c39d051c2f8d4ef84de841334e798113314f875787e219ecd5e1b5fd2cb47"
+    },
+    {
+      "path": "database/seeders/01_seed.sql",
+      "bytes": 1160,
+      "sha256": "beb2f262a48d0e849471eca6c1ba2c840f27500325255af5e2406c12e0ab4cc6"
+    },
+    {
+      "path": "database/web-clothing-store-backup.sql",
+      "bytes": 7788,
+      "sha256": "bdab75943a1db2a3846d96c8c3ace44f5d919087ea8efc027627beeaadd76324"
+    },
+    {
+      "path": "docker/.env.example",
+      "bytes": 345,
+      "sha256": "3afa209446c2e880606fdf6132091fd9de76ccc4428cb3cb6a5b0b2ed6f42219"
+    },
+    {
+      "path": "docker/.env.production.example",
+      "bytes": 241,
+      "sha256": "dfeb6369f9633637217e095ccd8bb9f11ebcf53c0d6ee2299adc03825ef72d5c"
+    },
+    {
+      "path": "docker/docker-compose.yml",
+      "bytes": 3493,
+      "sha256": "40690487b618315dc080ad45ce8cb3c410cbb96e3238c8d5bb9018e70e7a7b82"
+    },
+    {
+      "path": "docker/Dockerfile.backend",
+      "bytes": 324,
+      "sha256": "13e5a55bebd1da9bd5f0b997b08c668ff64eff88c23eeee1279b2ccf682e5bb0"
+    },
+    {
+      "path": "docker/Dockerfile.frontend",
+      "bytes": 234,
+      "sha256": "c7bbf04587a74f0a40f42a27213c23bfacbe962d070b836253875eb68ed08e41"
+    },
+    {
+      "path": "frontend/index.html",
+      "bytes": 283,
+      "sha256": "e3110b7c87c79a948595d3cd4ac215870ea9f029076670203fade40889c80eda"
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "bytes": 40899,
+      "sha256": "5f81110c42884df67ad9d0671a73c4a0af7bbb1d5e3b1f13625acdc3c2865949"
+    },
+    {
+      "path": "frontend/package.json",
+      "bytes": 371,
+      "sha256": "d5cc32c01b82b8e0cde9867b9710b67df550b574faada93bcd296bbec7778e5d"
+    },
+    {
+      "path": "frontend/public/css/style.css",
+      "bytes": 21879,
+      "sha256": "abda43717b92e38018dea0972577d406634e54cd706c54fecb9b6c06b1c0afdf"
+    },
+    {
+      "path": "frontend/public/images/products/.gitkeep",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "frontend/public/js/api.js",
+      "bytes": 2613,
+      "sha256": "0e14870b6f67f925a327a13000e4ef2a27b506f482cff128b253b6195d511cfd"
+    },
+    {
+      "path": "frontend/public/js/store.js",
+      "bytes": 23560,
+      "sha256": "ec07fbfad51a0886afb458e54d4bea89b7992720922b31953f44742f3b7acba4"
+    },
+    {
+      "path": "frontend/server.js",
+      "bytes": 2417,
+      "sha256": "1b92cbb587f02f7d0899901a197ee4ab6959456d7f4942fb604af91d4eaa42a2"
+    },
+    {
+      "path": "frontend/views/admin/dashboard.ejs",
+      "bytes": 544,
+      "sha256": "bf8859958bcda70aabc9a35bb802667e9d20f954dd10a958c0eff232b88c62d8"
+    },
+    {
+      "path": "frontend/views/admin/manage-orders.ejs",
+      "bytes": 427,
+      "sha256": "0beca9d14f277e7bfa7d4632ed7afe3b15f06a2641b730aedf5cf6fc3ae6aadb"
+    },
+    {
+      "path": "frontend/views/admin/orders.ejs",
+      "bytes": 299,
+      "sha256": "e40bfcc6992c78b3711cf928287ca0ade57a2f90db4b11a3e201529df114cdd8"
+    },
+    {
+      "path": "frontend/views/admin/products.ejs",
+      "bytes": 1988,
+      "sha256": "43a4b617dc3c8e564df38e25c8a150c8f48b6c6e14d54829a53ab9232160b97a"
+    },
+    {
+      "path": "frontend/views/auth/login.ejs",
+      "bytes": 1035,
+      "sha256": "3d0786c9535e24b7f76255541f30ea5514e029107b0cb8987269e3da5637cb9d"
+    },
+    {
+      "path": "frontend/views/auth/register.ejs",
+      "bytes": 1242,
+      "sha256": "c54d7f1c91b7b78f8ce5d3576ed2fd79ad22912284ded95ff9d1acb369227d85"
+    },
+    {
+      "path": "frontend/views/cart/cart.ejs",
+      "bytes": 912,
+      "sha256": "002d1875c25f04a76599c8757ce3f99e68b45df8bc7ba17fb07572168e39c5a1"
+    },
+    {
+      "path": "frontend/views/checkout/checkout.ejs",
+      "bytes": 1011,
+      "sha256": "6d3ee86ff445dd00057e71cbc06f81fb9587ec74506ace319777c29e27c5147b"
+    },
+    {
+      "path": "frontend/views/layouts/main.ejs",
+      "bytes": 1007,
+      "sha256": "295ab8f23c52628663570baba2d5209a99d10c1fd20325226882a0fbf078200d"
+    },
+    {
+      "path": "frontend/views/partials/footer.ejs",
+      "bytes": 686,
+      "sha256": "69a31e51c6b632da70e81ebe4a58ba47954c0c3f10f30c2d81985e3b8163821a"
+    },
+    {
+      "path": "frontend/views/partials/header.ejs",
+      "bytes": 773,
+      "sha256": "66b643d81b7bb0974555e24e3351b7eafa3ac2a7e1ccfe4469c81cd6d8b698f0"
+    },
+    {
+      "path": "frontend/views/products/detail.ejs",
+      "bytes": 1792,
+      "sha256": "0bb30fd1ba6366ded80ef273e3740219e752e23bf11f161300e2a5a243a0ee1a"
+    },
+    {
+      "path": "frontend/views/products/list.ejs",
+      "bytes": 2914,
+      "sha256": "efdd812c2c253374a9b587c13d38a96577c11728bee913a8cf8f731dba1909ab"
+    },
+    {
+      "path": "frontend/views/profile/profile.ejs",
+      "bytes": 1362,
+      "sha256": "69c6c336c58952577717319fdddbdbe14efe21beb9edadf34968b5aed5191740"
+    },
+    {
+      "path": "gateway/nginx.conf",
+      "bytes": 5764,
+      "sha256": "a6ac27e1fe766a164daeff5578b31b46e315a41973b85e4fcacfc376ec63411f"
+    },
+    {
+      "path": "READINESS-REVIEW.md",
+      "bytes": 36017,
+      "sha256": "ea71d3a8366b54c0772a2ad77dc83715eb1672bd223f7452c10d0a64bd2cf800"
+    },
+    {
+      "path": "README.md",
+      "bytes": 27330,
+      "sha256": "1327b6025e2f1690a699650e3a4b285e603133b16d28a5b9757b9ea704e97697"
+    },
+    {
+      "path": "test-artifacts/deploy-checkout.cjs",
+      "bytes": 6858,
+      "sha256": "c56c5b0678892973a2286529c2c0e8971931a4ba13aba0bdea94a9f6be5138b0"
+    },
+    {
+      "path": "test-artifacts/final-availability.txt",
+      "bytes": 818,
+      "sha256": "05a5661a94e60377375c7cec0111026b4f311dd33f7263f1b4986906d63c57ac"
+    },
+    {
+      "path": "test-artifacts/final-backend-audit.json",
+      "bytes": 364,
+      "sha256": "5a453f5077865770629a19fd2e007fd1535d8e979f941d5ca68036dbdb75f077"
+    },
+    {
+      "path": "test-artifacts/final-baseline-results.md",
+      "bytes": 8989,
+      "sha256": "81d217ff5971c6387b03c94861f7d9a1b5829536bc948d8f1d1a0a951c3fb214"
+    },
+    {
+      "path": "test-artifacts/final-category-mysql.txt",
+      "bytes": 932,
+      "sha256": "b2aa4a6c2942f0aac208b0ac8aa497ebe785083828f36f29455bd161e15dd825"
+    },
+    {
+      "path": "test-artifacts/final-frontend-audit.json",
+      "bytes": 360,
+      "sha256": "75a2593803ba2c0de1f984de6620074a814aa3decf9eed15677f8b9e12b5206e"
+    },
+    {
+      "path": "test-artifacts/final-mysql.txt",
+      "bytes": 2359,
+      "sha256": "8cf7e1921337826f08d79c4948079bdad1c912809bdc3e714772ea96cf50300b"
+    },
+    {
+      "path": "test-artifacts/final-recovery.txt",
+      "bytes": 798,
+      "sha256": "9d3a71b3cf20323be4e1e77f06b41f45fa849895758e55f47c23fada6ae2560f"
+    },
+    {
+      "path": "test-artifacts/final-unit.txt",
+      "bytes": 7641,
+      "sha256": "e9ed92b10de6be1f3e338b4bc1526b432c9780fbb9de65d90a8b755cb2f6ee02"
+    },
+    {
+      "path": "test-artifacts/idempotency-browser.png",
+      "bytes": 37231,
+      "sha256": "13e66a8253b7ebbab217316d9d3a0a4d26a24daf3b41b9b5e47ee310f1da1ee5"
+    },
+    {
+      "path": "test-artifacts/idempotency-deployment.txt",
+      "bytes": 973,
+      "sha256": "f16a99acbe618a6f29c3b68bc1a11eb077c8111dda18d1164d2adcc645355007"
+    },
+    {
+      "path": "test-artifacts/snapshot-baseline.cjs",
+      "bytes": 2957,
+      "sha256": "34722e639ce99b31158e3e64db7e8e25c8ec134695ca5840ffd8223d79b3694c"
+    }
+  ]
+}

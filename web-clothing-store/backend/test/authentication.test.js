@@ -6,6 +6,7 @@ const Module = require('node:module');
 const path = require('node:path');
 const { after, before, test } = require('node:test');
 const vm = require('node:vm');
+const { productRevision } = require('../src/utils/productRevision');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -34,8 +35,11 @@ let databaseUnavailable = false;
 let productListingUnavailable = false;
 
 const fakeDb = {
+  async getConnection() {
+    return { query: fakeDb.query.bind(fakeDb), async beginTransaction() {}, async commit() {}, async rollback() {}, release() {} };
+  },
   async query(sql, params = []) {
-    const normalizedSql = sql.replace(/\s+/g, ' ').trim();
+    const normalizedSql = sql.replace(/\s+/g, ' ').trim().replace(/ FOR UPDATE$/, '');
     queryLog.push({ sql: normalizedSql, params: [...params] });
 
     if (databaseUnavailable && normalizedSql.startsWith('SELECT id, role, token_version FROM users')) {
@@ -54,6 +58,12 @@ const fakeDb = {
     if (normalizedSql === 'SELECT id, role, token_version FROM users WHERE id = ?') {
       const user = users.get(params[0]);
       return [user ? [{ id: user.id, role: user.role, token_version: user.token_version }] : []];
+    }
+    if (normalizedSql === 'SELECT id FROM users WHERE id = ?') {
+      return [users.has(params[0]) ? [{ id: params[0] }] : []];
+    }
+    if (normalizedSql === 'SELECT id, product_id FROM cart_items WHERE id = ? AND user_id = ?') {
+      return [cartItems.filter(item => item.id === params[0] && item.user_id === params[1])];
     }
 
     if (normalizedSql === 'SELECT id, name, email, role, password, token_version FROM users WHERE email = ?') {
@@ -747,7 +757,7 @@ test('cart item reads and mutations are scoped to the authenticated user and val
     assert.equal(forbiddenUpdate.response.status, 404);
     assert.equal(cartItems.find((item) => item.id === 202).quantity, 1);
     assert.equal(queryLog.some(({ sql }) => sql.startsWith('UPDATE cart_items')), false);
-    assert.ok(queryLog.some(({ sql, params }) => sql.startsWith('SELECT ci.id, p.stock FROM cart_items ci') && params[0] === 202 && params[1] === 1));
+    assert.ok(queryLog.some(({ sql, params }) => sql.startsWith('SELECT id, product_id FROM cart_items') && params[0] === 202 && params[1] === 1));
 
     const forbiddenDelete = await request('/api/cart/202', { token: userAToken, method: 'DELETE' });
     assert.equal(forbiddenDelete.response.status, 404);
@@ -1011,7 +1021,7 @@ test('password changes reject weak or oversized new passwords and do not return 
     body: { currentPassword: 'StartPassword#2026', newPassword: 'ChangedPassword#2026' }
   });
   assert.equal(changed.response.status, 200);
-  assert.deepEqual(changed.data, { message: 'Profile updated' });
+  assert.deepEqual(changed.data, { message: 'Password changed. Please sign in again.', reauthenticate: true });
   assert.equal(Object.hasOwn(changed.data, 'password'), false);
   assert.equal(await bcrypt.compare('ChangedPassword#2026', users.get(3).password), true);
 
@@ -1282,7 +1292,7 @@ test('product validation accepts schema boundary values and zero price/stock', a
   const boundaryUpdate = await request(`/api/products/${boundary.data.id}`, {
     token,
     method: 'PUT',
-    body: boundaryPayload
+    body: { ...boundaryPayload, revision: productRevision(product) }
   });
   assert.equal(boundaryUpdate.response.status, 200);
   assert.equal(product.price, 99999999.99);
@@ -1315,6 +1325,7 @@ test('valid product create and full-form update remain compatible with the admin
   assert.equal(product.category_id, 1);
 
   const form = multipartProduct({
+    revision: productRevision(product),
     name: 'Updated linen shirt',
     description: 'Updated description',
     price: '200',
@@ -1350,7 +1361,7 @@ test('valid product create and full-form update remain compatible with the admin
   const invalidCategoryUpdate = await request(`/api/products/${created.data.id}`, {
     token,
     method: 'PUT',
-    body: productPayload({ name: 'Should not update', category_id: '999' })
+    body: { ...productPayload({ name: 'Should not update', category_id: '999' }), revision: productRevision(product) }
   });
   assert.equal(invalidCategoryUpdate.response.status, 400);
   assert.equal(product.name, 'Updated linen shirt');
@@ -1604,4 +1615,26 @@ test('product field validation failure removes an already normalized uploaded im
 
   assert.equal(response.response.status, 400);
   assert.deepEqual(uploadDirectoryEntries(), baseline);
+});
+
+test('invalid JSON is 400 and oversized JSON is 413 without reflecting the body', async () => {
+  for (const [body, status] of [['{"private_marker":', 400], [JSON.stringify({ private_marker: 'x'.repeat(110 * 1024) }), 413]]) {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body
+    });
+    assert.equal(response.status, status);
+    const data = await response.json();
+    assert.doesNotMatch(JSON.stringify(data), /private_marker|SyntaxError|stack|sqlMessage/);
+  }
+  assert.equal((await request('/api/products')).response.status, 200);
+});
+
+test('unhandled internal errors return a generic 500 without exposing private details', async () => {
+  // Install a test-only route before the application's existing final handler.
+  const handler = app.router.stack.pop();
+  app.get('/test-only-internal-error', () => { throw new Error('private_marker with SQL and credentials'); });
+  app.router.stack.push(handler);
+  const response = await fetch(`${baseUrl}/test-only-internal-error`);
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), { message: 'Internal server error' });
 });

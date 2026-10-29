@@ -1,1515 +1,304 @@
-# Web Clothing Store
+# MỘC — Web Clothing Store
 
-Ứng dụng bán quần áo trực tuyến được xây dựng theo mô hình Frontend + Backend API + MySQL. Project hỗ trợ đăng ký, đăng nhập, quản lý sản phẩm, danh mục, giỏ hàng và đặt hàng.
+Website bán quần áo dùng Node.js, Express, EJS và MySQL 8.0. Người dùng có thể đăng ký, đăng nhập, quản lý giỏ hàng, đặt hàng và xem lịch sử. Admin quản lý sản phẩm, ảnh và danh mục.
 
-Project có thể chạy bằng Docker để đồng bộ môi trường và tránh phụ thuộc vào MySQL/XAMPP trên máy.
+README này mô tả cấu hình **demo HTTP local**, cập nhật ngày **29/10/2026**. Baseline đã kiểm thử chưa chèn attack chain. Kết quả và giới hạn nằm trong [báo cáo baseline](test-artifacts/final-baseline-results.md).
 
----
+## 1. Kiến trúc
 
-## 1. Công nghệ sử dụng
-
-### Frontend
-
-- Node.js
-- Express
-- EJS
-- HTML/CSS/JavaScript
-
-### Backend
-
-- Node.js
-- Express
-- MySQL
-- JWT Authentication
-- bcrypt
-- CORS
-- dotenv
-
-### Database
-
-- MySQL 8.0
-- UTF8MB4
-- Foreign Key
-- Unique Constraint
-- Transaction
-
-### Docker
-
-- Docker
-- Docker Compose
-- MySQL 8.0
-- Node.js Backend Container
-- Docker Network
-- Docker Volume
-
----
-
-# 2. Kiến trúc hệ thống
-
-Project gồm ba thành phần chính:
-
-```text
-                ┌──────────────────────┐
-                │       Frontend       │
-                │      Port 3000       │
-                │    Express + EJS     │
-                └──────────┬───────────┘
-                           │
-                           │ HTTP API
-                           ▼
-                ┌──────────────────────┐
-                │       Backend        │
-                │      Port 3001       │
-                │   Node.js + Express  │
-                └──────────┬───────────┘
-                           │
-                           │ MySQL
-                           ▼
-                ┌──────────────────────┐
-                │        MySQL         │
-                │      DB_NAME      │
-                │      Port 3306       │
-                └──────────────────────┘
-```
-
-Khi chạy bằng Docker:
-
-```text
-Frontend
-   │
-   ▼
-Backend container
-   │
-   │ DB_HOST=db
-   ▼
-MySQL container
-```
-
-Trong Docker, backend **không sử dụng `localhost` để kết nối MySQL**.
-
-Backend sử dụng:
-
-```env
-DB_HOST=db
-```
-
-vì `db` là tên service MySQL trong Docker Compose.
-
----
-
-# 3. Cấu trúc thư mục
-
-```text
-web-clothing-store/
-│
-├── backend/
-│   ├── .env
-│   ├── package.json
-│   ├── server.js
-│   ├── test-db.js
-│   ├── uploads/
-│   │
-│   └── src/
-│       ├── config/
-│       ├── controllers/
-│       ├── middleware/
-│       ├── routes/
-│       └── ...
-│
-├── database/
-│   ├── schema.sql
-│   └── seeders/
-│       └── 01_seed.sql
-│
-├── docker/
-│   ├── docker-compose.yml
-│   └── Dockerfile.backend
-│
-├── frontend/
-│   ├── public/
-│   ├── views/
-│   ├── package.json
-│   └── ...
-│
-└── README.md
-```
-
----
-
-# 4. Yêu cầu môi trường
-
-Tất cả lệnh Docker Compose trong README này chạy từ thư mục gốc web-clothing-store/ và dùng cấu hình --env-file docker/.env -f docker/docker-compose.yml. Tạo docker/.env từ docker/.env.example và điền cấu hình cục bộ trước khi chạy Compose; không commit file đã điền.
-
-Có thể chạy project bằng Docker.
-
-`CSRF_TRUSTED_ORIGINS` là danh sách origin chính xác, phân cách bằng dấu phẩy. File mẫu gồm `http://localhost:3000` và IP LAN minh họa `http://192.168.1.83:3000`; thay IP này bằng địa chỉ LAN thực tế. Cấu hình production chỉ chấp nhận origin HTTPS.
-
-Cần cài:
-
-- Docker Desktop
-- Git
-- Node.js nếu muốn chạy Frontend hoặc Backend trực tiếp ngoài Docker
-
-Kiểm tra Docker:
-
-```bash
-docker --version
-```
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml version
-```
-
-Kiểm tra Node.js:
-
-```bash
-node --version
-```
-
-```bash
-npm --version
-```
-
----
-
-# 5. Chạy project bằng Docker
-
-## 5.1. Không cần chạy MySQL bằng XAMPP
-
-Project sử dụng MySQL trong Docker.
-
-Nếu XAMPP đang chạy MySQL ở port `3306`, vẫn có thể để XAMPP chạy, vì MySQL Docker không publish port `3306` ra máy host.
-
-Backend trong Docker kết nối tới:
-
-```env
-DB_HOST=db
-```
-
-Không đổi thành:
-
-```env
-DB_HOST=localhost
-```
-
----
-
-# 6. Cấu hình Database
-
-Docker Compose lấy `MYSQL_ROOT_PASSWORD`, `DB_NAME`, `DB_USER` và `DB_PASSWORD` từ `docker/.env` hoặc nguồn secret được inject cho deployment. Trong network Compose, Backend dùng `DB_HOST=db`.
-
-Không ghi mật khẩu hoặc thông tin tài khoản thật vào README. Với MySQL volume đã có, các biến `MYSQL_*` chỉ là giá trị bootstrap; thay chúng không cập nhật tài khoản đã được tạo.
-# 7. Khởi động Docker
-
-Đứng tại thư mục gốc project:
-
-```bash
-web-clothing-store/
-```
-
-Chạy:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
-
-Kiểm tra container:
-
-```bash
-docker ps
-```
-
-Thông thường sẽ có:
-
-```text
-webapp_db
-webapp_backend
-```
-
-Kiểm tra trạng thái:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml ps
-```
-
-MySQL cần ở trạng thái:
-
-```text
-healthy
-```
-
----
-
-# 8. Xem log
-
-Xem toàn bộ log:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml logs
-```
-
-Theo dõi log realtime:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f
-```
-
-Chỉ xem backend:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f backend
-```
-
-Chỉ xem database:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml logs -f db
-```
-
----
-
-# 9. Dừng project
-
-Dừng container:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml stop
-```
-
-Dừng và xóa container:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml down
-```
-
----
-
-# 10. Cập nhật Docker mà vẫn giữ dữ liệu MySQL
-
-Database được lưu trong named volume db_data. Khi chỉ cập nhật frontend hoặc backend, không xóa volume này và không cần dựng lại database. Hướng dẫn build riêng từng dịch vụ nằm ở mục 41.
-
-Nếu cần dừng stack, lệnh docker compose --env-file docker/.env -f docker/docker-compose.yml down (không dùng thao tác xóa volume) sẽ gỡ container và network nhưng giữ lại named volume db_data. Khi chạy lại Compose với cùng project và file cấu hình, MySQL sẽ dùng lại dữ liệu đó.
-
-Nếu gặp lỗi schema, hãy sao lưu và kiểm tra đúng database trước khi áp dụng migration đã được rà soát. Không khởi tạo lại volume để sửa lỗi ứng dụng hoặc schema.
-
-# 11. Database Schema
-
-Database gồm các bảng:
-
-```text
-users
-categories
-products
-cart_items
-orders
-order_items
-```
-
-Sơ đồ quan hệ:
-
-```text
-users
-  │
-  ├───────────────┐
-  │               │
-  ▼               ▼
-cart_items      orders
-  │               │
-  ▼               ▼
-products       order_items
-  │
-  ▼
-categories
-```
-
----
-
-# 12. Bảng users
-
-Lưu thông tin tài khoản.
-
-Các cột chính:
-
-```text
-id
-name
-email
-password
-role
-created_at
-```
-
-Trong đó:
-
-```text
-role = user
-role = admin
-```
-
-Email có `UNIQUE`.
-
-Tên tài khoản cũng có `UNIQUE`.
-
----
-
-# 13. Bảng categories
-
-Lưu danh mục sản phẩm.
-
-Ví dụ:
-
-```text
-T-Shirts
-Hoodies
-Accessories
-```
-
-Tên category không được trùng.
-
----
-
-# 14. Bảng products
-
-Lưu thông tin sản phẩm.
-
-Các cột:
-
-```text
-id
-name
-description
-price
-stock
-size
-color
-image_url
-category_id
-created_at
-```
-
-Trong đó:
-
-```text
-price >= 0
-stock >= 0
-```
-
-`category_id` là Foreign Key tới:
-
-```text
-categories.id
-```
-
----
-
-# 15. Bảng cart_items
-
-Lưu sản phẩm trong giỏ hàng.
-
-Các cột:
-
-```text
-id
-user_id
-product_id
-quantity
-```
-
-Một user không thể có nhiều record cho cùng một product.
-
-Database sử dụng:
-
-```sql
-UNIQUE (user_id, product_id)
-```
-
----
-
-# 16. Bảng orders
-
-Lưu thông tin đơn hàng.
-
-Các cột:
-
-```text
-id
-user_id
-total
-status
-created_at
-```
-
-Một order thuộc về một user.
-
----
-
-# 17. Bảng order_items
-
-Lưu các sản phẩm trong đơn hàng.
-
-Các cột:
-
-```text
-id
-order_id
-product_id
-quantity
-price
-```
-
-Giá sản phẩm được lưu lại tại thời điểm đặt hàng.
-
-Điều này giúp giữ đúng giá của đơn hàng ngay cả khi giá sản phẩm sau đó thay đổi.
-
----
-
-# 18. Seed dữ liệu
-
-File seed:
-
-~~~text
-database/seeders/01_seed.sql
-~~~
-
-Khi MySQL khởi tạo một data directory mới, seed tạo các tài khoản demo sau:
-
-### Admin demo
-
-~~~text
-Email: admin@webapp.lab
-Password: 123456
-Role: admin
-~~~
-
-### User demo
-
-~~~text
-Email: hacker@webapp.lab
-Password: 123456
-Role: user
-~~~
-
-Đây là thông tin demo được seed trong database/seeders/01_seed.sql, chỉ dùng cho môi trường local. Hãy đổi mật khẩu của các tài khoản này trước khi triển khai ra môi trường thật. Seed cũng tạo category và sản phẩm mẫu. MySQL không chạy lại seed khi volume đã có dữ liệu.
-
-# 19. Authentication
-
-Backend sử dụng JWT.
-
-Quy trình:
-
-```text
-Login
-  ↓
-Backend kiểm tra email/password
-  ↓
-bcrypt.compare()
-  ↓
-Tạo JWT
-  ↓
-Frontend lưu token
-  ↓
-Gửi token khi gọi API protected
-```
-
-Token được sử dụng để xác thực các chức năng như:
-
-```text
-Cart
-Orders
-Profile
-Admin
-```
-
----
-
-# 20. API Backend
-
-Backend chạy tại:
-
-```text
-http://localhost:3001
-```
-
-Health check:
-
-```text
-GET /
-```
-
-Kết quả:
-
-```json
-{
-  "message": "Clothing Store API is running"
-}
-```
-
----
-
-# 21. Product API
-
-Lấy danh sách sản phẩm:
-
-```http
-GET /api/products
-```
-
-Lấy sản phẩm theo ID:
-
-```http
-GET /api/products/:id
-```
-
-Tạo sản phẩm:
-
-```http
-POST /api/products
-```
-
-Cập nhật sản phẩm:
-
-```http
-PUT /api/products/:id
-```
-
-Xóa sản phẩm:
-
-```http
-DELETE /api/products/:id
-```
-
-Các API quản trị yêu cầu quyền phù hợp.
-
----
-
-# 22. Category API
-
-Lấy danh sách category:
-
-```http
-GET /api/categories
-```
-
-Tạo category:
-
-```http
-POST /api/categories
-```
-
-Cập nhật category:
-
-```http
-PUT /api/categories/:id
-```
-
-Xóa category:
-
-```http
-DELETE /api/categories/:id
-```
-
----
-
-# 23. Authentication API
-
-Đăng ký:
-
-```http
-POST /api/auth/register
-```
-
-Đăng nhập:
-
-```http
-POST /api/auth/login
-```
-
-Lấy thông tin user hiện tại:
-
-```http
-GET /api/auth/me
-```
-
-Các API yêu cầu authentication phải gửi JWT.
-
-Ví dụ:
-
-```http
-Authorization: Bearer <TOKEN>
-```
-
----
-
-# 24. Cart API
-
-Lấy giỏ hàng:
-
-```http
-GET /api/cart
-```
-
-Thêm sản phẩm:
-
-```http
-POST /api/cart
-```
-
-Body:
-
-```json
-{
-  "product_id": 1,
-  "quantity": 2
-}
-```
-
-Cập nhật:
-
-```http
-PUT /api/cart/:id
-```
-
-Xóa:
-
-```http
-DELETE /api/cart/:id
-```
-
----
-
-# 25. Order API
-
-Tạo đơn hàng:
-
-```http
-POST /api/orders
-```
-
-Lấy danh sách đơn hàng:
-
-```http
-GET /api/orders
-```
-
-Lấy chi tiết:
-
-```http
-GET /api/orders/:id
-```
-
-Quá trình đặt hàng:
-
-```text
-User
- ↓
-Cart
- ↓
-Check stock
- ↓
-Begin transaction
- ↓
-Lock product rows
- ↓
-Create order
- ↓
-Create order_items
- ↓
-Decrease stock
- ↓
-Clear cart
- ↓
-Commit
-```
-
-Nếu xảy ra lỗi:
-
-```text
-ROLLBACK
-```
-
-để tránh database ở trạng thái dở dang.
-
----
-
-# 26. Chống xung đột stock
-
-Khi đặt hàng, backend sử dụng transaction và:
-
-```sql
-FOR UPDATE
-```
-
-để khóa các dòng sản phẩm liên quan.
-
-Ngoài ra việc trừ stock sử dụng:
-
-```sql
-UPDATE products
-SET stock = stock - ?
-WHERE id = ?
-  AND stock >= ?
-```
-
-Điều kiện:
-
-```text
-stock >= quantity
-```
-
-được database kiểm tra trực tiếp.
-
-Ví dụ:
-
-```text
-Stock = 1
-
-User A mua 1
-User B mua 1
-```
-
-Chỉ một request có thể trừ thành công.
-
-Request còn lại phải nhận lỗi thiếu stock.
-
----
-
-# 27. Chống trùng sản phẩm trong cart
-
-Database có:
-
-```sql
-UNIQUE (user_id, product_id)
-```
-
-Vì vậy:
-
-```text
-User 1 + Product 5
-```
-
-chỉ tồn tại một lần trong `cart_items`.
-
-Khi thêm lại cùng sản phẩm, backend tăng:
-
-```text
-quantity
-```
-
-thay vì tạo một row mới.
-
----
-
-# 28. Chống trùng email
-
-Database sử dụng:
-
-```sql
-UNIQUE(email)
-```
-
-Backend cũng xử lý lỗi:
-
-```text
-ER_DUP_ENTRY
-```
-
-và trả về:
-
-```http
-409 Conflict
-```
-
-khi email hoặc username đã tồn tại.
-
----
-
-# 29. Upload hình ảnh
-
-Hình ảnh upload được lưu tại:
-
-```text
-backend/uploads/
-```
-
-Backend phục vụ thư mục:
-
-```text
-/uploads
-```
-
-Ví dụ:
-
-```text
-backend/uploads/shirt.png
-```
-
-sẽ được truy cập qua:
-
-```text
-http://localhost:3001/uploads/shirt.png
-```
-
-Seed sử dụng dạng:
-
-```text
-/uploads/shirt.png
-/uploads/hoodie.png
-/uploads/sticker.png
-```
-
----
-
-# 30. Chạy Frontend
-
-Đi vào thư mục:
-
-```bash
-cd frontend
-```
-
-Cài dependencies:
-
-```bash
-npm install
-```
-
-Chạy:
-
-```bash
-npm start
-```
-
-hoặc command tương ứng được khai báo trong `package.json`.
-
-Frontend mặc định sử dụng:
-
-```text
-http://localhost:3000
-```
-
-Backend:
-
-```text
-http://localhost:3001
-```
-
----
-
-# 31. Chạy Backend ngoài Docker
-
-Chỉ dùng cách này khi muốn debug Node.js trực tiếp.
-
-Đi vào:
-
-```bash
-cd backend
-```
-
-Cài package:
-
-```bash
-npm install
-```
-
-Tạo `.env`:
-
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=web-clothing-store
-PORT=3001
-JWT_SECRET=
-```
-
-Sau đó:
-
-```bash
-npm start
-```
-
-### Lưu ý
-
-Khi chạy backend ngoài Docker, backend sẽ sử dụng MySQL trên máy host.
-
-Ví dụ:
-
-```text
-localhost
-root
-web-clothing-store
-```
-
-Đây là database khác với database Docker:
-
-```text
-db
-DB_USER
-DB_NAME
-```
-
-Không nên đồng thời debug hai database mà không biết backend đang kết nối tới database nào.
-
----
-
-# 32. Khuyến nghị môi trường chạy
-
-Khuyến nghị sử dụng:
-
 ```text
-Docker MySQL
-+
-Docker Backend
-+
-Frontend
+Trình duyệt — http://localhost:3000
+    │
+    ▼
+Nginx gateway :80 (publish host :3000)
+    │
+    ▼
+Frontend Express/EJS :3000
+    │ proxy /api và /uploads
+    ▼
+Backend Express :3001
+    │
+    ▼
+MySQL :3306 (chỉ trong Docker network)
 ```
-
-Không cần:
-
-```text
-XAMPP MySQL
-```
-
-cho project này.
-
-Kiến trúc khuyến nghị:
-
-```text
-Frontend
-   ↓
-Docker Backend
-   ↓
-Docker MySQL
-```
-
----
-
-# 33. Kiểm tra kết nối database
-
-Backend có file:
-
-```text
-backend/test-db.js
-```
-
-Khi backend chạy trong Docker, kiểm tra bằng:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
-```
-
-Kết quả thành công phải tương tự:
-
-```text
-Kết nối MySQL thành công
-```
-
-Nếu lỗi, xem log:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml logs backend
-```
-
-và:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml logs db
-```
-
----
-
-# 34. Kiểm tra MySQL trực tiếp
-
-Truy cập MySQL container:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml exec db sh -lc 'mysql -u "$MYSQL_USER" -p "$MYSQL_DATABASE"'
-```
-
-Kiểm tra database:
-
-```sql
-SHOW DATABASES;
-```
-
-Chọn database:
-
-```sql
-USE DB_NAME;
-```
-
-Kiểm tra bảng:
-
-```sql
-SHOW TABLES;
-```
-
-Kết quả cần có:
-
-```text
-cart_items
-categories
-order_items
-orders
-products
-users
-```
-
-Kiểm tra products:
-
-```sql
-DESCRIBE products;
-```
-
-Kiểm tra users:
-
-```sql
-SELECT id, name, email, role FROM users;
-```
-
-Thoát:
-
-```sql
-exit;
-```
-
----
-
-# 35. Các lỗi thường gặp
-
-## Lỗi: Table doesn't exist
-
-Ví dụ:
-
-~~~text
-Table 'DB_NAME.cart_items' doesn't exist
-~~~
-
-Kiểm tra backend đang trỏ tới đúng database. Với volume đã tồn tại, script khởi tạo schema không tự chạy lại. Hãy sao lưu dữ liệu, xác nhận database đích và áp dụng migration phù hợp vào database hiện có. Giữ nguyên db_data; không xóa volume để xử lý lỗi thiếu bảng.
-
-## Lỗi: Unknown column
-
-Ví dụ:
-
-~~~text
-Unknown column 'stock'
-~~~
-
-Backend và schema trong database hiện có đang không đồng bộ. Sao lưu database, rà soát thay đổi schema và áp dụng migration có kiểm soát. Không xóa hoặc tạo lại db_data để cập nhật ứng dụng.
-
-## Lỗi: Port 3306 already allocated
-
-Ví dụ:
-
-```text
-Bind for 0.0.0.0:3306 failed
-```
-
-Nguyên nhân:
-
-MySQL/XAMPP trên máy đang sử dụng port `3306`.
-
-Project Docker được cấu hình để không cần publish MySQL ra host.
-
-Kiểm tra `docker-compose.yml` và đảm bảo MySQL không có:
-
-```yaml
-ports:
-  - "3306:3306"
-```
-
-Backend vẫn dùng:
-
-```env
-DB_HOST=db
-```
-
----
-
-## Lỗi: ECONNREFUSED
-
-Nguyên nhân thường là backend khởi động trước MySQL.
-
-Docker Compose sử dụng MySQL healthcheck để đảm bảo database ready trước backend.
-
-Kiểm tra:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml ps
-```
-
-Database cần ở trạng thái:
-
-```text
-healthy
-```
-
----
-
-## Lỗi: Invalid credentials
-
-Tài khoản seed admin@webapp.lab / hacker@webapp.lab với mật khẩu 123456 chỉ dành cho demo local (xem mục 18). Trên volume đã có dữ liệu, MySQL không chạy lại seed nên mật khẩu có thể khác.
-
-Không xóa database để khôi phục đăng nhập. Xác nhận đúng tài khoản và database, rồi dùng quy trình cập nhật hoặc khôi phục mật khẩu có kiểm soát để giữ nguyên dữ liệu.
-
-## Lỗi: Ảnh sản phẩm 404
-
-Kiểm tra file:
-
-```text
-backend/uploads/
-```
-
-và URL:
-
-```text
-/uploads/filename.png
-```
-
-Ví dụ:
-
-```text
-backend/uploads/shirt.png
-```
-
-phải truy cập được:
-
-```text
-http://localhost:3001/uploads/shirt.png
-```
-
----
-
-# 36. Docker Volume
-
-MySQL lưu dữ liệu trong named volume:
-
-~~~text
-db_data
-~~~
-
-Volume này tồn tại qua việc restart container hoặc chạy docker compose --env-file docker/.env -f docker/docker-compose.yml down không kèm thao tác xóa volume. Chạy lại stack với cùng Compose project sẽ gắn lại volume đó.
-
-Không xóa db_data khi chỉ muốn cập nhật frontend hoặc backend. Dùng lệnh cập nhật riêng ở mục 41. Tránh các thao tác Docker dọn dẹp/xóa volume khi chưa có backup đã kiểm tra.
-
-# 37. Docker Network
-
-Backend và MySQL cùng nằm trong network:
-
-```text
-webapp_network
-```
-
-Backend kết nối MySQL thông qua tên service:
-
-```text
-db
-```
-
-Không sử dụng:
-
-```text
-localhost
-```
-
-trong trường hợp backend chạy bên trong Docker.
-
----
-
-# 38. Quản lý secrets
-
-- Chạy Backend trực tiếp: dùng backend/.env, được bỏ qua bởi backend/.gitignore.
-- Docker Compose phát triển: tạo docker/.env từ docker/.env.example, điền giá trị cục bộ rồi chạy lệnh từ thư mục gốc với --env-file docker/.env -f docker/docker-compose.yml.
-- Môi trường triển khai: không để secret trong repository; inject biến từ secret manager hoặc file ngoài repository và dùng cấu hình riêng cho môi trường đó.
-- Mỗi môi trường cần JWT secret riêng. Cấu hình hiện tại yêu cầu secret đủ độ dài, DB password không rỗng và DB user không phải root; đây không phải xác nhận rằng ứng dụng đã được rà soát đầy đủ hoặc sẵn sàng production.
-- Thay JWT_SECRET làm các JWT đã phát hành bằng secret cũ hết hiệu lực khi backend dùng secret mới. Cần thông báo tác động đăng nhập trước khi triển khai thay đổi này.
-- Các biến MYSQL_* của image chỉ khởi tạo tài khoản khi data directory còn trống. Đổi MYSQL_PASSWORD trong Compose không tự đổi mật khẩu trong MySQL volume hiện có; cần quy trình chuyển đổi riêng và kiểm tra kết nối.
-- Không commit file env đã điền giá trị. Không xóa named volume db_data để cập nhật cấu hình hoặc ứng dụng; cập nhật đúng service bằng các lệnh tại mục 41.
-
-# 39. Transaction khi đặt hàng
-
-Order sử dụng transaction:
-
-```text
-BEGIN
-  ↓
-SELECT cart + product
-  ↓
-FOR UPDATE
-  ↓
-Create order
-  ↓
-Create order_items
-  ↓
-Update stock
-  ↓
-Delete cart
-  ↓
-COMMIT
-```
-
-Nếu bất kỳ bước nào thất bại:
-
-```text
-ROLLBACK
-```
-
-Nhờ đó tránh các trường hợp:
-
-```text
-Tạo order thành công
-nhưng stock không giảm
-```
-
-hoặc:
-
-```text
-Stock đã giảm
-nhưng order không tồn tại
-```
-
----
-
-# 40. Kiểm tra hệ thống sau khi cài
-
-Thực hiện lần lượt:
-
-### Bước 1
-
-```bash
-docker ps
-```
-
-### Bước 2
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml ps
-```
-
-### Bước 3
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
-```
-
-### Bước 4
-
-Mở:
-
-```text
-http://localhost:3001/
-```
-
-### Bước 5
-
-Mở:
-
-```text
-http://localhost:3001/api/products
-```
-
-### Bước 6
-
-Mở:
-
-```text
-http://localhost:3001/api/categories
-```
-
-### Bước 7
-
-Mở Frontend:
-
-```text
-http://localhost:3000
-```
-
-### Bước 8
-
-Đăng nhập bằng tài khoản demo được seed:
-
-~~~text
-admin@webapp.lab
-123456
-~~~
-
-Thông tin này chỉ dành cho demo local. Đổi mật khẩu trước khi triển khai ra môi trường thật.
-
-
-
-### Bước 9
-
-Thử:
-
-```text
-Thêm sản phẩm vào cart
-```
-
-### Bước 10
-
-Thử:
-
-```text
-Đặt hàng
-```
-
----
-
-# 41. Quy trình development khuyến nghị
-
-Chạy tất cả lệnh sau từ thư mục gốc web-clothing-store/, dùng đúng --env-file docker/.env -f docker/docker-compose.yml. Các lệnh nhắm riêng service và không xóa volume db_data.
-
-Cập nhật hoặc build lại Backend:
-
-~~~bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps backend
-~~~
-
-Cập nhật hoặc build lại Frontend:
-
-~~~bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps frontend
-~~~
-
-Build lại cả hai service ứng dụng mà không khởi động lại dependencies:
-
-~~~bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps backend frontend
-~~~
-
-Các lệnh này không yêu cầu dừng hoặc dựng lại service db; bảo đảm MySQL đang chạy trước khi cập nhật ứng dụng. Không xóa db_data khi chỉ sửa code hoặc Dockerfile frontend/backend.
-
-Thay đổi schema cần migration riêng trên database hiện có: sao lưu trước, rà soát migration và giữ nguyên volume. Các script schema.sql/seed là bước khởi tạo ban đầu, không phải quy trình cập nhật schema cho database đã có dữ liệu.
-
-# 42. Không nên làm
-
-Không nên chạy:
-
-```text
-Backend Docker
-+
-Backend local
-```
-
-cùng lúc trên cùng port.
-
-Không nên để:
-
-```text
-Backend Docker → localhost:3306
-```
-
-Không nên chạy đồng thời nhiều database rồi không xác định backend đang sử dụng database nào.
-
-Không xóa named volume db_data khi chỉ cập nhật frontend hoặc backend. Trước mọi thao tác dự kiến làm thay đổi dữ liệu, hãy tạo và kiểm tra backup.
-
-Không nên sửa schema trực tiếp trong database mà không cập nhật:
-
-```text
-database/schema.sql
-```
-
----
-
-# 43. Tóm tắt cách chạy nhanh
-
-Sau khi clone/download project:
-
-```bash
-cd web-clothing-store
-```
-
-Khởi động:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
-```
-
-Kiểm tra:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml ps
-```
-
-Kiểm tra database:
-
-```bash
-docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
-```
-
-Backend:
-
-```text
-http://localhost:3001
-```
-
-Frontend:
-
-```text
-http://localhost:3000
-```
-
-Tài khoản demo:
-
-```text
-Admin
-Email: admin@webapp.lab
-Password: 123456 (demo only; change before real deployment)
-```
-
-```text
-User
-Email: hacker@webapp.lab
-Password: 123456 (demo only; change before real deployment)
-```
-
----
-
-# 44. Troubleshooting nhanh
 
-| Hiện tượng | Nguyên nhân | Cách xử lý |
+| Service | Container | Truy cập từ máy chủ |
 |---|---|---|
-| `ER_NO_SUCH_TABLE` | Thiếu bảng | Sao lưu, xác nhận database đích và áp dụng migration phù hợp; giữ nguyên volume |
-| `Unknown column` | Schema cũ | Sao lưu, rà soát và áp dụng migration phù hợp; giữ nguyên volume |
-| `ECONNREFUSED` | MySQL chưa ready | Kiểm tra healthcheck |
-| `3306 already allocated` | XAMPP/MySQL đang dùng port | Không publish 3306 của Docker |
-| `Invalid credentials` | Thông tin tài khoản không khớp | Xác nhận database và cập nhật/khôi phục mật khẩu có kiểm soát; giữ nguyên volume |
-| Product image 404 | Không có file upload | Kiểm tra `backend/uploads` |
-| Cart duplicate | Request đồng thời | UNIQUE `(user_id, product_id)` |
-| Overselling | Race condition stock | Transaction + `FOR UPDATE` |
-| Email duplicate | Không có unique constraint | UNIQUE(email) |
+| gateway | webapp_gateway | http://localhost:3000 |
+| frontend | webapp_frontend | Qua gateway, không publish cổng riêng |
+| backend | webapp_backend | http://127.0.0.1:3001 |
+| db | webapp_db | Không publish cổng MySQL |
 
----
+Backend trong Docker dùng `DB_HOST=db`. Frontend dùng API cùng origin `/api`; không cần mua domain để chạy local. Gateway hiện publish cổng 3000 trên các interface máy chủ, nên máy khác trong LAN có thể truy cập nếu firewall cho phép.
 
-# 45. Mục tiêu của phiên bản hiện tại
-
-Phiên bản này tập trung vào:
+## 2. Thư mục chính
 
 ```text
-✓ Đồng bộ Backend với Database
-✓ MySQL 8
-✓ Docker Compose
-✓ Persistent Database Volume
-✓ MySQL Healthcheck
-✓ JWT Authentication
-✓ bcrypt Password Hash
-✓ Categories
-✓ Products
-✓ Cart
-✓ Orders
-✓ Order Items
-✓ Foreign Keys
-✓ Unique Constraints
-✓ Transaction
-✓ Row Lock với FOR UPDATE
-✓ Kiểm tra Stock trước khi trừ
-✓ Chống overselling
-✓ Chống duplicate cart item
-✓ Chống duplicate email
+backend/               API, transaction, migration runner và kiểm thử
+  src/                 Controller, middleware, cấu hình, helper
+  scripts/             Công cụ migration
+  test/                Kiểm thử thường và MySQL riêng
+  uploads/             Ảnh upload, bind mount vào /app/uploads
+frontend/              Express, EJS và JavaScript giao diện
+database/              schema.sql, seeders và tài liệu migration
+docker/                Dockerfile, Compose và cấu hình mẫu
+gateway/               Cấu hình Nginx
+test-artifacts/        Log, báo cáo và manifest baseline
+READINESS-REVIEW.md     Lịch sử rà soát và kết quả
 ```
 
----
+Database gồm sáu bảng: `users`, `categories`, `products`, `cart_items`, `orders`, `order_items`.
 
-# 46. License
+## 3. Chuẩn bị môi trường
 
-Project được sử dụng cho mục đích học tập, thực hành Node.js, Express, MySQL và Docker.
+Cần Docker Desktop đang chạy. Git dùng để lấy/lưu code. Node.js 24 và npm cần khi chạy kiểm thử hoặc công cụ trực tiếp trên máy; chạy toàn bộ ứng dụng bằng Docker không cần cài MySQL/XAMPP.
+
+Các lệnh PowerShell bên dưới chạy từ thư mục gốc dự án:
+
+```powershell
+cd D:\Project\NT120\web-clothing-store
+docker --version
+docker compose version
+```
+
+### Tạo cấu hình lần đầu
+
+Chỉ tạo `docker/.env` nếu chưa có, tránh ghi đè cấu hình đang sử dụng:
+
+```powershell
+if (-not (Test-Path .\docker\.env)) {
+    Copy-Item .\docker\.env.example .\docker\.env
+}
+notepad .\docker\.env
+```
+
+Điền các biến sau vào file:
+
+| Biến | Giá trị hoặc ý nghĩa |
+|---|---|
+| NODE_ENV | `development` cho cấu hình HTTP local này |
+| MYSQL_ROOT_PASSWORD | Mật khẩu root MySQL do bạn tự đặt |
+| DB_NAME | `web-clothing-store` |
+| DB_USER | Tài khoản ứng dụng, khác root |
+| DB_PASSWORD | Mật khẩu tài khoản ứng dụng |
+| JWT_SECRET | Chuỗi bí mật ngẫu nhiên, đủ dài |
+| CSRF_TRUSTED_ORIGINS | Ví dụ `http://localhost:3000,http://127.0.0.1:3000` |
+
+Nếu truy cập qua LAN, thêm đúng origin `http://<IP-máy-chủ>:3000` vào danh sách, phân cách bằng dấu phẩy. Thay IP minh họa trong file mẫu bằng IP thực tế.
+
+Schema và seed hiện dùng cố định tên `web-clothing-store`; không chỉ đổi `DB_NAME` sang tên khác rồi kỳ vọng khởi tạo đúng. Với volume MySQL đã tồn tại, thay mật khẩu trong `.env` không tự đổi mật khẩu tài khoản trong database.
+
+Không commit `.env`, mật khẩu, SQL backup hoặc dữ liệu riêng lên GitHub. File mẫu `.env.example` có thể đưa vào Git.
+
+## 4. Khởi động lần đầu
+
+```powershell
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
+docker compose --env-file docker/.env -f docker/docker-compose.yml ps
+```
+
+Đợi cả bốn service chuyển sang `healthy`, sau đó mở **http://localhost:3000**.
+
+MySQL chỉ chạy `schema.sql` và seed khi data directory mới hoàn toàn. Volume đã có dữ liệu sẽ không tự chạy lại các file này.
+
+Seed tạo tài khoản demo local:
+
+| Vai trò | Email | Mật khẩu demo |
+|---|---|---|
+| Admin | admin@webapp.lab | 123456 |
+| User | hacker@webapp.lab | 123456 |
+
+Đây là tài khoản mẫu trong seed, không bảo đảm còn đúng ở database đã thay đổi mật khẩu. Không dùng thông tin demo cho môi trường công khai.
+
+## 5. Kiểm tra hoạt động và xem log
+
+```powershell
+# Backend có đang chạy không?
+curl.exe -i http://127.0.0.1:3001/
+
+# Backend có truy vấn được database không?
+curl.exe -i http://127.0.0.1:3001/ready
+
+# Kiểm tra API qua gateway
+curl.exe -i http://localhost:3000/api/products
+
+# Kiểm tra kết nối bằng CLI; thành công trả mã 0, lỗi trả mã 1
+docker compose --env-file docker/.env -f docker/docker-compose.yml exec backend node test-db.js
+$LASTEXITCODE
+
+# Theo dõi log; Ctrl+C để thoát theo dõi
+docker compose --env-file docker/.env -f docker/docker-compose.yml logs --tail 100 -f backend
+```
+
+`GET /` là kiểm tra tiến trình, có thể vẫn trả 200 khi database lỗi. `GET /ready` chạy `SELECT 1`, trả 200 hoặc 503; chưa kiểm tra toàn bộ schema/migration. Gateway `/health` chỉ kiểm tra Nginx.
+
+## 6. Cập nhật code và migration
+
+### Chỉ thay đổi code, không đổi schema
+
+```powershell
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build --no-deps backend frontend
+docker compose --env-file docker/.env -f docker/docker-compose.yml ps
+```
+
+Sau cập nhật, tải lại trình duyệt bằng `Ctrl+F5`. Nếu có thay đổi schema, thực hiện migration phù hợp trước khi mở lại ứng dụng.
+
+### Database cũ chưa có checkout_key
+
+Bản hiện tại yêu cầu `orders.checkout_key` và UNIQUE `(user_id, checkout_key)`. Database tạo mới từ schema hiện tại đã có sẵn. Database cũ cần migration bổ sung; không import lại schema/seed lên dữ liệu đang dùng.
+
+Trước khi chạy: sao lưu database và uploads, khôi phục thử sang MySQL riêng và diễn tập migration. Trong thời gian migration, dừng các tiến trình ghi dữ liệu. Sau khi đã xác nhận backup và diễn tập thành công:
+
+```powershell
+docker compose --env-file docker/.env -f docker/docker-compose.yml build backend frontend
+docker compose --env-file docker/.env -f docker/docker-compose.yml stop backend frontend
+docker compose --env-file docker/.env -f docker/docker-compose.yml run --rm --no-deps backend node scripts/migrate-checkout.cjs
+```
+
+Chỉ khi migration kết thúc thành công mới chạy:
+
+```powershell
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --no-deps backend frontend
+```
+
+Migration giữ đơn cũ với khóa NULL và hỗ trợ chạy lại. MySQL DDL có implicit commit; lỗi giữa chừng cần kiểm tra trạng thái thực trước khi tiếp tục. Migration danh mục có quy trình riêng, gắn với deployment đã rà soát, không chạy tùy tiện trên database khác.
+
+Xem [hướng dẫn migration, backup và phục hồi](database/migrations/README.md).
+
+## 7. Hành vi nghiệp vụ và API
+
+### Xác thực và phân quyền
+
+JWT nằm trong cookie `token` HttpOnly. Backend đọc cookie, không dùng hướng dẫn Bearer token của README cũ. Request thay đổi dữ liệu cần origin được tin cậy và header `X-CSRF-Token`; lấy CSRF token tại `GET /api/auth/csrf`. Trình duyệt được giao diện xử lý tự động.
+
+Đổi mật khẩu thu hồi phiên cũ, xóa cookie và yêu cầu đăng nhập lại. Giỏ hàng và đơn hàng được giới hạn theo chủ sở hữu. Các thao tác quản trị yêu cầu quyền admin.
+
+| Nhóm | Endpoint chính |
+|---|---|
+| Xác thực | POST `/api/auth/register`, POST `/api/auth/login`, GET `/api/auth/csrf` |
+| Tài khoản | GET/PUT `/api/users/me`, POST `/api/users/logout` |
+| Sản phẩm | GET/POST `/api/products`, GET/PUT/DELETE `/api/products/:id` |
+| Danh mục | GET/POST `/api/categories`, PUT/DELETE `/api/categories/:id` |
+| Giỏ hàng | GET/POST `/api/cart`, PUT/DELETE `/api/cart/:id` |
+| Đơn hàng | GET/POST `/api/orders`, GET `/api/orders/:id` |
+
+### Giỏ hàng, checkout và gửi lại request
+
+Transaction và khóa MySQL bảo vệ cập nhật giỏ, tồn kho và đơn hàng. Tiền được tính bằng số nguyên chính xác; tổng trả về là chuỗi hai chữ số thập phân. Tổng vượt giới hạn `DECIMAL(10,2)` trả 422 và giữ nguyên giỏ/tồn kho.
+
+`POST /api/orders` yêu cầu header **Idempotency-Key là UUID v4**:
+
+- Thiếu khóa: 428; khóa sai định dạng: 400.
+- Cùng người dùng và khóa đã tạo đơn: trả lại cùng phản hồi 201, mã đơn và tổng tiền; không tạo thêm đơn, không xóa giỏ mới.
+- Lần đặt hàng mới cần khóa mới.
+- Giao diện giữ khóa đang chờ trong sessionStorage theo người dùng và tab; giữ qua lỗi mạng/tải lại, xóa sau khi nhận thành công.
+
+Xóa storage hoặc đổi tab có thể mất khóa đang chờ. Trước lần commit thành công đầu tiên, retry dùng giỏ hiện tại; đây không phải bản chụp giá/giỏ bất biến.
+
+### Form admin và upload
+
+Sản phẩm có `revision` lấy từ API, không phải cột cần migration. PUT phải gửi revision hiện tại: thiếu 428, sai định dạng 400, dữ liệu đã đổi 409. Cập nhật không đổi giá trị vẫn thành công. Giao diện giữ bản nháp khi xung đột.
+
+Tên danh mục được bảo vệ bằng UNIQUE. Xóa sản phẩm đã bán trả 409 để giữ lịch sử đơn. Upload được kiểm tra nội dung ảnh, giới hạn dung lượng và dọn file khi thao tác thất bại. Ảnh nằm trong `backend/uploads`, được truy cập qua `/uploads`.
+
+Các phản hồi thường gặp: 400 dữ liệu sai; 401 chưa đăng nhập; 403 thiếu quyền/CSRF/origin; 404 không tìm thấy hoặc không thuộc người dùng; 409 xung đột; 413 quá dung lượng; 415 loại file không hỗ trợ; 422 tổng tiền vượt giới hạn; 428 thiếu điều kiện; 429 quá số lần gọi; 500 lỗi nội bộ; 503 database/dịch vụ không sẵn sàng.
+
+## 8. Kiểm thử
+
+Dùng Node.js 24. Trên PowerShell dùng `npm.cmd` nếu `npm.ps1` bị chặn. Từ thư mục gốc:
+
+```powershell
+npm.cmd --prefix backend ci
+npm.cmd --prefix frontend ci
+npm.cmd --prefix backend test
+```
+
+Các suite MySQL phải chạy trên môi trường thử riêng. Đọc [hướng dẫn chuẩn bị và chạy kiểm thử](backend/test/README.md) trước khi chạy hai suite nghiệp vụ/danh mục; chúng cần container thử và trạng thái MySQL sẵn sàng:
+
+```powershell
+npm.cmd --prefix backend run test:mysql
+npm.cmd --prefix backend run test:categories:mysql
+```
+
+Hai suite sau tự tạo MySQL tạm riêng bằng Docker, kiểm tra lỗi database/khóa/gửi lại checkout rồi dừng container của chúng:
+
+```powershell
+npm.cmd --prefix backend run test:availability:mysql
+npm.cmd --prefix backend run test:recovery:mysql
+```
+
+Không đổi cấu hình test để trỏ vào `webapp_db`. Không chạy đồng thời suite danh mục với migration hoặc backup diễn tập trên cùng server thử.
+
+Kết quả ghi nhận ngày 29/10/2026, không phải cam kết cho mọi thay đổi sau đó:
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Test thường/HTTP/giao diện giả lập | 79/79 |
+| Nghiệp vụ trên MySQL thật | 19/19 |
+| Migration danh mục | 7/7 |
+| DB availability | 6/6 kịch bản |
+| Recovery, deadlock và migration checkout | 9 kiểm tra đạt |
+| Cú pháp JS/CJS | 52 file đạt |
+| npm audit runtime | Backend 0, frontend 0 cảnh báo tại lần kiểm tra |
+
+Log và ảnh trình duyệt: [báo cáo baseline](test-artifacts/final-baseline-results.md). Phạm vi có kiểm thử trình duyệt một số luồng chính, chưa phải toàn bộ browser E2E.
+
+## 9. Dữ liệu, backup và khôi phục
+
+MySQL lưu trong named volume `db_data` (deployment đã kiểm tra có tên thực `docker_db_data`). Upload lưu bằng bind mount `backend/uploads`. Chỉ giữ image hoặc code chưa đủ để khôi phục dữ liệu.
+
+```powershell
+# Xem nơi lưu dữ liệu thực tế
+docker inspect webapp_db --format '{{json .Mounts}}'
+docker inspect webapp_backend --format '{{json .Mounts}}'
+
+# Dừng mà giữ container/dữ liệu
+docker compose --env-file docker/.env -f docker/docker-compose.yml stop
+
+# Chạy lại
+docker compose --env-file docker/.env -f docker/docker-compose.yml start
+```
+
+`docker compose ... down` không có `-v` giữ named volume, nhưng cần dùng lại đúng Compose project để gắn đúng volume. Không dùng `down -v`, xóa volume hoặc chạy seed lại như cách sửa lỗi ứng dụng.
+
+Backup cần SQL nhất quán, ảnh uploads, cấu hình bí mật được giữ kín và phiên bản code/image tương ứng. Xác minh SHA-256, restore vào database riêng, đối chiếu dữ liệu/ảnh, diễn tập migration và thử ứng dụng trước khi chuyển sang bản phục hồi. Không import đè database đang dùng.
+
+Baseline **nt120-local-20261029-v1** đã lưu ngoài repository tại:
+
+```text
+D:\Project\NT120\web-clothing-store-backups\checkout-2026-10-29T05-31-28-357Z
+```
+
+Gồm `baseline-source.zip`, `baseline-images.tar`, checksum, SQL, uploads và cấu hình riêng. SQL này được lấy trước migration checkout, nên phải áp dụng migration checkout sau khi restore trước khi dùng code mới. Không đưa thư mục backup hoặc cấu hình bí mật lên GitHub.
+
+Manifest của snapshot nằm tại [final-baseline-manifest.json](test-artifacts/final-baseline-manifest.json). README đang đọc được cập nhật sau snapshot v1; snapshot v1 giữ nguyên để bảo toàn checksum, chưa bao gồm lần sửa README này.
+
+## 10. Xử lý lỗi thường gặp
+
+| Hiện tượng | Cách kiểm tra |
+|---|---|
+| Pull image báo TLS handshake timeout/EOF | Kiểm tra kết nối Docker Desktop tới Docker Hub, proxy/VPN/DNS rồi thử `docker pull node:24-alpine`; lỗi HTTPS của registry không yêu cầu website local dùng HTTPS |
+| Lỗi origin/CSRF 403 | Dùng đúng địa chỉ đã khai báo trong `CSRF_TRUSTED_ORIGINS`, cập nhật container backend nếu đổi cấu hình |
+| Thiếu bảng/cột/index | Xác nhận đúng DB và migration; file init không tự chạy lại trên volume cũ |
+| Backend unhealthy hoặc 503 | Xem log backend/db và thử `/ready`; `/` trả 200 chưa chứng minh DB hoạt động |
+| Ảnh 404 | Kiểm tra file trong `backend/uploads` và đường dẫn `/uploads`; backup SQL không chứa nội dung ảnh |
+| Giao diện còn code cũ | Build lại frontend/backend cần thiết, kiểm tra container và tải `Ctrl+F5` |
+
+## 11. Phạm vi nghiệm thu và tài liệu
+
+Đã nghiệm thu cho demo local theo các bằng chứng nêu trên. Những giới hạn giữ lại:
+
+- Charset dữ liệu seed khi import chưa sửa theo lựa chọn người dùng; nhập tiếng Việt qua web đã được kiểm tra.
+- Giá trong chi tiết đơn được lưu tại thời điểm mua; tên và ảnh sản phẩm của đơn cũ vẫn lấy từ sản phẩm hiện tại.
+- Chỉ đo tải đọc nhỏ 100 request/10 đồng thời; chưa có kiểm thử tải kéo dài hoặc cam kết thông lượng checkout.
+- Đã thử mất HTTP response sau commit; chưa tiêm lỗi mất MySQL COMMIT ACK ở mức kết nối.
+- Chưa nghiệm thu HTTPS/production, phục hồi ngoài máy hoặc PITR/binlog; readiness không thay thế kiểm tra migration.
+
+Tài liệu liên quan:
+
+- [Rà soát readiness](READINESS-REVIEW.md)
+- [Kết quả baseline và checklist 10 mục](test-artifacts/final-baseline-results.md)
+- [Chạy kiểm thử hồi quy](backend/test/README.md)
+- [Migration và phục hồi](database/migrations/README.md)
+
+Nếu làm lab attack chain tiếp theo, dùng bản sao môi trường và dữ liệu riêng, giữ baseline này để đối chiếu và khôi phục.

@@ -17,7 +17,7 @@ sharp.unblock({
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 40_000_000;
-const uploadsDirectory = path.resolve(__dirname, '../../uploads');
+const uploadsDirectory = require('../config/uploads');
 
 const allowedImages = {
   '.jpg': { format: 'jpeg', mimeType: 'image/jpeg', extension: '.jpg' },

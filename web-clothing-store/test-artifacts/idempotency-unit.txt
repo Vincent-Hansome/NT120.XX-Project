@@ -1,0 +1,98 @@
+
+> test
+> node --test test/*.test.js
+
+✔ login signs an HS256 token for two hours and returns it in the HttpOnly cookie (2938.6638ms)
+✔ production login marks the cookie Secure and production origins must use HTTPS (38.4051ms)
+✔ accepts a valid cookie token and rejects missing cookie or Authorization-only credentials (25.6943ms)
+✔ rejects old and malformed token versions (9.7829ms)
+[userController.logout] failed { code: 'UNKNOWN' }
+✔ logout database failure does not report success or clear the still-valid session (5.8794ms)
+✔ rejects malformed, incorrectly signed, expired, non-HS256, missing-expiry, and invalid-identity tokens (8.6305ms)
+✔ rejects tokens for deleted users and returns a generic service error if DB lookup fails (3.2532ms)
+✔ requires CSRF proof and an allowed Origin or Referer for unsafe requests (10.7174ms)
+✔ allows the exact configured LAN Origin for credentialed CSRF-protected requests (2.6361ms)
+✔ uses the current database role instead of a stale JWT role or request body role (12.0863ms)
+✔ profile returns only the authenticated user fields and rejects mass-assignment fields (23.8381ms)
+✔ keeps public catalog routes public and protects product/category writes and admin order listing (17.6044ms)
+✔ cart and customer order endpoints query only the current user's rows (5.3291ms)
+✔ cart item reads and mutations are scoped to the authenticated user and validate IDs and quantities (82.214ms)
+✔ order detail rejects malformed IDs after authentication and before order queries (5.124ms)
+(node:22368) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ frontend API client obtains CSRF proof and reaches the backend through the same-origin proxy (33.9182ms)
+✔ login rejects incorrect credentials with a generic 401 response (4.6786ms)
+✔ login returns controlled 400 responses for missing fields and non-string values (10.5119ms)
+✔ registration validates email, name and password types and enforces the new password bounds (14.0949ms)
+✔ registration follows the schema email UNIQUE constraint; duplicate names remain allowed (111.3597ms)
+✔ password changes require authentication, the current password and the authenticated user identity (11.5424ms)
+✔ password changes reject weak or oversized new passwords and do not return password hashes (217.703ms)
+[userController.updateProfile] failed { code: 'UNKNOWN' }
+✔ password change database failure leaves password and session version unchanged (58.1355ms)
+✔ login failure limit is keyed by trusted client IP rather than account email (0.7926ms)
+✔ registration rate limit returns 429 after its per-client IP quota (40.9204ms)
+✔ register limiter trusts forwarded IPs only from the resolved frontend peer (0.2917ms)
+✔ register limiter falls back to the socket IP for invalid forwarded headers or DNS failure (0.1639ms)
+✔ frontend DNS resolver normalizes IPv4-mapped IPv6 and safely returns no trusted peers on failure (0.1582ms)
+✔ product validation rejects invalid values before writing to the database (55.1984ms)
+✔ controller database failures preserve generic responses and log only safe error metadata (1.4447ms)
+✔ product validation accepts schema boundary values and zero price/stock (6.7631ms)
+✔ valid product create and full-form update remain compatible with the admin payload (14.1027ms)
+✔ invalid product and category route ids are rejected before catalog writes (12.7073ms)
+✔ category names are trimmed, bounded, type checked, and duplicate names return 409 (34.5572ms)
+✔ image upload verifies and re-encodes actual raster content under a server-generated name (20.0071ms)
+✔ Sharp loader allowlist preserves JPEG, PNG, and WebP uploads (44.6706ms)
+✔ spoofed image contents, MIME mismatches, SVG, and oversized images are rejected and cleaned up (60.3049ms)
+✔ product field validation failure removes an already normalized uploaded image (9.5954ms)
+✔ invalid JSON is 400 and oversized JSON is 413 without reflecting the body (4.7558ms)
+[app.unhandledRequest] failed { code: 'UNKNOWN' }
+✔ unhandled internal errors return a generic 500 without exposing private details (1.3395ms)
+﹣ category migration and API on isolated real MySQL (0.6709ms) # SKIP
+✔ checkout retains its key across a lost response, reload and changed cart; success clears it (37.2107ms)
+✔ pending checkout can be resolved after reload even with an empty cart (1.3173ms)
+✔ checkout double click sends only one request (1.1262ms)
+✔ checkout fails closed when intent storage is unavailable or account changes (1.6774ms)
+✔ pending keys are scoped to the signed-in user (1.0136ms)
+✔ API client preserves HTTP 400, including non-JSON error bodies (1.3445ms)
+✔ API client preserves HTTP 401, including non-JSON error bodies (0.7598ms)
+✔ API client preserves HTTP 403, including non-JSON error bodies (0.6697ms)
+✔ API client preserves HTTP 409, including non-JSON error bodies (0.6827ms)
+✔ API client preserves HTTP 413, including non-JSON error bodies (0.6374ms)
+✔ API client preserves HTTP 500, including non-JSON error bodies (0.5699ms)
+✔ API client preserves HTTP 502, including non-JSON error bodies (0.5652ms)
+✔ CSRF acquisition preserves a 403 and never submits the mutation (0.7472ms)
+✔ API success returns data and sends CSRF proof for mutations (15.7779ms)
+✔ quick-add 401 only redirects on 401 and enables retry otherwise (1.3952ms)
+✔ quick-add 403 only redirects on 401 and enables retry otherwise (0.8461ms)
+✔ quick-add 409 only redirects on 401 and enables retry otherwise (2.1959ms)
+✔ quick-add 500 only redirects on 401 and enables retry otherwise (0.7038ms)
+✔ quick-add network error only redirects on 401 and enables retry otherwise (0.6198ms)
+✔ quick-add success updates the badge and returns the button to usable state (0.7295ms)
+✔ quick-add retry clears the previous error after success (0.7234ms)
+✔ admin form submits its revision, preserves a stale draft and saves a freshly loaded form (1.4194ms)
+✔ password UI sends the change then redirects to a login notice; failure keeps the form usable (1.3507ms)
+✔ query timeout destroys the socket, never releases it, and permits a subsequent query (39.5981ms)
+✔ expired queued acquisitions are removed and do not execute SQL later (61.1776ms)
+✔ queue capacity rejects excess requests immediately and recovers (0.4348ms)
+✔ closing the database rejects queued acquisitions without opening more sockets (0.376ms)
+✔ a connection arriving after the acquisition deadline is destroyed (106.7078ms)
+✔ commit and rollback are bounded; a disposed connection cannot run more commands (92.7626ms)
+✔ short readiness deadline does not change normal query deadline (46.9912ms)
+✔ test-db always closes the pool and returns failure for query or close failure (0.706ms)
+✔ test-db process exits nonzero for a refused database connection (124.7766ms)
+✔ database availability errors map to generic 503; SQL bugs remain 500 (0.3905ms)
+﹣ isolated MySQL business regressions (0.5778ms) # SKIP
+✔ transaction lifecycle: success (1.3385ms)
+✔ transaction lifecycle: acquire (0.2957ms)
+✔ transaction lifecycle: begin (0.125ms)
+✔ transaction lifecycle: work (0.7531ms)
+✔ transaction lifecycle: commit (0.1233ms)
+✔ transaction lifecycle: rollback (0.1616ms)
+ℹ tests 79
+ℹ suites 2
+ℹ pass 79
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4283.5446

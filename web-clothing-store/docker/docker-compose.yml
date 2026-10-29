@@ -53,7 +53,7 @@ services:
       - ../backend/uploads:/app/uploads
 
     healthcheck:
-      test: ["CMD", "node", "-e", "require('node:http').get('http://127.0.0.1:3001/', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "const request=require('node:http').get('http://127.0.0.1:3001/ready', (response) => process.exit(response.statusCode === 200 ? 0 : 1));request.setTimeout(2500,()=>{request.destroy();process.exit(1)});request.on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 3s
       retries: 3

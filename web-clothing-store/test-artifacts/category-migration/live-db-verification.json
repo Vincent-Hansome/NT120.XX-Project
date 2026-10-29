@@ -1,0 +1,347 @@
+﻿{
+  "host": "db",
+  "port": 3306,
+  "identity": {
+    "db": "web-clothing-store",
+    "hostname": "fd09dd01b9ec",
+    "server_uuid": "290bb158-c262-11f1-bd83-5a080e03a6aa",
+    "version": "8.0.46",
+    "collation_db": "utf8mb4_unicode_ci",
+    "account": "lab_user@%",
+    "readOnly": 0
+  },
+  "tables": [
+    {
+      "TABLE_NAME": "cart_items",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "categories",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "order_items",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "orders",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "users",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_general_ci"
+    }
+  ],
+  "columns": [
+    {
+      "TABLE_NAME": "categories",
+      "COLUMN_NAME": "id",
+      "COLUMN_TYPE": "int",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "categories",
+      "COLUMN_NAME": "name",
+      "COLUMN_TYPE": "varchar(100)",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "id",
+      "COLUMN_TYPE": "int",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "name",
+      "COLUMN_TYPE": "varchar(255)",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "description",
+      "COLUMN_TYPE": "text",
+      "IS_NULLABLE": "YES",
+      "COLLATION_NAME": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "price",
+      "COLUMN_TYPE": "decimal(10,2)",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "stock",
+      "COLUMN_TYPE": "int",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "size",
+      "COLUMN_TYPE": "varchar(50)",
+      "IS_NULLABLE": "YES",
+      "COLLATION_NAME": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "color",
+      "COLUMN_TYPE": "varchar(50)",
+      "IS_NULLABLE": "YES",
+      "COLLATION_NAME": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "image_url",
+      "COLUMN_TYPE": "varchar(255)",
+      "IS_NULLABLE": "YES",
+      "COLLATION_NAME": "utf8mb4_general_ci"
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "category_id",
+      "COLUMN_TYPE": "int",
+      "IS_NULLABLE": "YES",
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "created_at",
+      "COLUMN_TYPE": "timestamp",
+      "IS_NULLABLE": "NO",
+      "COLLATION_NAME": null
+    }
+  ],
+  "indexes": [
+    {
+      "TABLE_NAME": "cart_items",
+      "INDEX_NAME": "PRIMARY",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "cart_items",
+      "INDEX_NAME": "product_id",
+      "NON_UNIQUE": 1,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "product_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "cart_items",
+      "INDEX_NAME": "uq_cart_user_product",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "user_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "cart_items",
+      "INDEX_NAME": "uq_cart_user_product",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 2,
+      "COLUMN_NAME": "product_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "categories",
+      "INDEX_NAME": "PRIMARY",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "categories",
+      "INDEX_NAME": "uq_categories_name",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "name",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "order_items",
+      "INDEX_NAME": "order_id",
+      "NON_UNIQUE": 1,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "order_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "order_items",
+      "INDEX_NAME": "PRIMARY",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "order_items",
+      "INDEX_NAME": "product_id",
+      "NON_UNIQUE": 1,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "product_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "orders",
+      "INDEX_NAME": "PRIMARY",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "orders",
+      "INDEX_NAME": "user_id",
+      "NON_UNIQUE": 1,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "user_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "products",
+      "INDEX_NAME": "category_id",
+      "NON_UNIQUE": 1,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "category_id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "products",
+      "INDEX_NAME": "PRIMARY",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "id",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "users",
+      "INDEX_NAME": "email",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "email",
+      "SUB_PART": null
+    },
+    {
+      "TABLE_NAME": "users",
+      "INDEX_NAME": "PRIMARY",
+      "NON_UNIQUE": 0,
+      "SEQ_IN_INDEX": 1,
+      "COLUMN_NAME": "id",
+      "SUB_PART": null
+    }
+  ],
+  "foreignKeys": [
+    {
+      "TABLE_SCHEMA": "web-clothing-store",
+      "TABLE_NAME": "order_items",
+      "CONSTRAINT_NAME": "order_items_ibfk_1",
+      "COLUMN_NAME": "order_id",
+      "REFERENCED_TABLE_NAME": "orders",
+      "REFERENCED_COLUMN_NAME": "id",
+      "UPDATE_RULE": "NO ACTION",
+      "DELETE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_SCHEMA": "web-clothing-store",
+      "TABLE_NAME": "order_items",
+      "CONSTRAINT_NAME": "order_items_ibfk_2",
+      "COLUMN_NAME": "product_id",
+      "REFERENCED_TABLE_NAME": "products",
+      "REFERENCED_COLUMN_NAME": "id",
+      "UPDATE_RULE": "NO ACTION",
+      "DELETE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_SCHEMA": "web-clothing-store",
+      "TABLE_NAME": "orders",
+      "CONSTRAINT_NAME": "orders_ibfk_1",
+      "COLUMN_NAME": "user_id",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id",
+      "UPDATE_RULE": "NO ACTION",
+      "DELETE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_SCHEMA": "web-clothing-store",
+      "TABLE_NAME": "products",
+      "CONSTRAINT_NAME": "fk_products_category",
+      "COLUMN_NAME": "category_id",
+      "REFERENCED_TABLE_NAME": "categories",
+      "REFERENCED_COLUMN_NAME": "id",
+      "UPDATE_RULE": "NO ACTION",
+      "DELETE_RULE": "SET NULL"
+    },
+    {
+      "TABLE_SCHEMA": "web-clothing-store",
+      "TABLE_NAME": "cart_items",
+      "CONSTRAINT_NAME": "fk_cart_user",
+      "COLUMN_NAME": "user_id",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id",
+      "UPDATE_RULE": "NO ACTION",
+      "DELETE_RULE": "CASCADE"
+    },
+    {
+      "TABLE_SCHEMA": "web-clothing-store",
+      "TABLE_NAME": "cart_items",
+      "CONSTRAINT_NAME": "fk_cart_product",
+      "COLUMN_NAME": "product_id",
+      "REFERENCED_TABLE_NAME": "products",
+      "REFERENCED_COLUMN_NAME": "id",
+      "UPDATE_RULE": "NO ACTION",
+      "DELETE_RULE": "CASCADE"
+    }
+  ],
+  "possibleReferences": [
+    {
+      "TABLE_NAME": "products",
+      "COLUMN_NAME": "category_id"
+    }
+  ],
+  "counts": {
+    "cart_items": 1,
+    "categories": 3,
+    "order_items": 16,
+    "orders": 11,
+    "products": 4,
+    "users": 6
+  },
+  "duplicates": [],
+  "links": [
+    {
+      "category_id": 1,
+      "n": 1
+    },
+    {
+      "category_id": 2,
+      "n": 2
+    },
+    {
+      "category_id": 3,
+      "n": 1
+    }
+  ],
+  "orphans": {
+    "n": 0
+  }
+}

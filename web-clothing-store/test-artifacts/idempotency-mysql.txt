@@ -1,0 +1,36 @@
+
+> test:mysql
+> node test/run-mysql.cjs
+
+▶ isolated MySQL business regressions
+  ✔ checkout validates keys, replays the same result and preserves refilled cart (102.8396ms)
+  ✔ two concurrent requests with one key return one durable order (38.3467ms)
+  ✔ checkout keys are scoped to each user and a new key creates a new intent (111.7107ms)
+  ✔ failed checkout does not consume its key; retry after correction succeeds (67.1383ms)
+  ✔ two concurrent adds preserve both increments, also on an initially empty cart (78.8293ms)
+  ✔ cart quantity boundaries, missing products/items, and stock conflicts leave the cart intact (149.5694ms)
+  ✔ absolute update and incremental add serialize consistently (41.1918ms)
+  ✔ two customers checking out the last item yield one order and preserve the losing cart (128.6318ms)
+  ✔ two checkouts for one cart cannot create duplicate orders (32.7178ms)
+  ✔ add after checkout starts is retained as a new cart, never silently deleted (41.858ms)
+  ✔ update before checkout is included; update/delete after checkout return 404 (52.3174ms)
+  ✔ update and delete submitted while checkout holds the cart lock return 404 after checkout (109.7425ms)
+  ✔ money is exact, zero and DECIMAL maximum succeed; overflow is 422 with full rollback (199.6957ms)
+[orderController.createOrder] failed { code: 'ER_SIGNAL_EXCEPTION', errno: 1644 }
+  ✔ real MySQL failure after an order, item and stock write rolls back every change (72.3528ms)
+  ✔ stale admin form racing checkout returns 409; fresh and unchanged updates succeed (78.4402ms)
+  ✔ CRUD missing rows are 404, no-op category updates succeed, duplicate categories are 409 (55.8641ms)
+  ✔ deleting a purchased product returns 409 and preserves orders, items, product and cart (61.0364ms)
+[productController.create] failed { code: 'ER_SIGNAL_EXCEPTION', errno: 1644 }
+[productController.update] failed { code: 'ER_SIGNAL_EXCEPTION', errno: 1644 }
+  ✔ normalized uploads are cleaned on 404, stale 409, validation and database failures (143.3844ms)
+  ✔ password change clears cookie, revokes both prior sessions and allows new login (2896.5052ms)
+✔ isolated MySQL business regressions (4817.2391ms)
+ℹ tests 19
+ℹ suites 1
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4943.6603

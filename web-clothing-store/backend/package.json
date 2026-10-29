@@ -6,7 +6,7 @@
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "mysql2": "^3.24.5",
     "sharp": "^0.35.5"
   },
@@ -16,6 +16,10 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "node --test test/authentication.test.js"
+    "test": "node --test test/*.test.js",
+    "test:mysql": "node test/run-mysql.cjs",
+    "test:categories:mysql": "node test/run-category-mysql.cjs",
+    "test:availability:mysql": "node test/availability-mysql.cjs",
+    "test:recovery:mysql": "node test/checkout-recovery-mysql.cjs"
   }
 }

@@ -1,0 +1,9 @@
+PASS real server lock-wait timeout -> HTTP 409, rollback intact; ms=1032
+PASS normal checkout succeeds after lock-wait failure
+PASS real InnoDB deadlock -> checkout victim HTTP 409, no partial order
+PASS normal checkout succeeds after deadlock rollback
+PASS response dropped after committed checkout: exactly one durable order
+PASS retry with unchanged empty cart creates no second order (HTTP 400)
+CONFIRMED GAP: replay of the same checkout after refilling cart creates order #2 (HTTP 201)
+RESULT locks/recovery passed; checkout retry is NOT idempotent after cart changes
+Stopped disposable container: nt120-recovery-1793250298006
