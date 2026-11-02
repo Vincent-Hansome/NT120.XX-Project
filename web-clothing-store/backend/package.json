@@ -20,6 +20,8 @@
     "test:mysql": "node test/run-mysql.cjs",
     "test:categories:mysql": "node test/run-category-mysql.cjs",
     "test:availability:mysql": "node test/availability-mysql.cjs",
-    "test:recovery:mysql": "node test/checkout-recovery-mysql.cjs"
+    "test:recovery:mysql": "node test/checkout-recovery-mysql.cjs",
+    "migrate:support": "node scripts/migrate-support.cjs",
+    "test:support:mysql": "node test/support-mysql.cjs"
   }
 }

@@ -1,5 +1,29 @@
 # Migrations
 
+## Customer support tickets — 02/11/2026
+
+Implementation: `backend/scripts/migrate-support.cjs`, also exposed as
+`npm.cmd run migrate:support` from `backend`. Fresh installs include the table
+in `database/schema.sql`. For an existing deployment, build the backend image,
+then run this additive migration before restarting backend/frontend:
+
+```powershell
+docker compose --env-file docker/.env -f docker/docker-compose.yml run --rm --no-deps backend node scripts/migrate-support.cjs
+```
+
+Creates `support_tickets` if missing, with an owner FK, owner/list index,
+subject/message, staff response, status and timestamps. Does not seed, reset,
+delete or rewrite existing business rows. Reruns preserve tickets and replies.
+If an incompatible table already uses this name, review it separately; the
+migration checks required columns but does not repair arbitrary pre-existing
+column types, constraints or indexes. Retain the additive table on application
+rollback so any requests already submitted remain available.
+
+`npm.cmd run test:support:mysql` verifies the migration, HTTP permissions,
+ownership, validation, CSRF, responses and pagination on a new disposable MySQL.
+It never points at the application's database. See the support section in the
+project README for UI and browser-test instructions.
+
 ## Checkout idempotency — 29/10/2026
 
 Implementation: `backend/scripts/migrate-checkout.cjs` (also exported from

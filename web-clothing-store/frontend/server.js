@@ -33,6 +33,8 @@ app.get('/checkout', page('checkout/checkout', { pageTitle: 'Thanh toán' }));
 app.get('/login', page('auth/login', { pageTitle: 'Đăng nhập' }));
 app.get('/register', page('auth/register', { pageTitle: 'Đăng ký' }));
 app.get('/profile', page('profile/profile', { pageTitle: 'Tài khoản' }));
+app.get('/support', page('support/tickets', { pageTitle: 'Hỗ trợ khách hàng' }));
+app.get('/admin/support', page('admin/support', { pageTitle: 'Yêu cầu hỗ trợ' }));
 app.get('/orders', page('admin/orders', { pageTitle: 'Đơn hàng' }));
 app.get('/admin', page('admin/dashboard', { pageTitle: 'Quản trị' }));
 app.get(

@@ -1,5 +1,21 @@
 # Đánh giá nền tảng trước khi triển khai attack chain
 
+## Rà soát kịch bản attack chain ngày 02/11/2026
+
+Đã đối chiếu lại `D:\Downloads\Attack-Chain.docx`, source hiện tại và biên bản
+baseline local ngày 29/10. Chưa chạy payload, dựng lab hoặc thay cơ chế bảo vệ.
+Xem [báo cáo kịch bản và điều kiện triển khai](ATTACK-CHAIN-REVIEW.md).
+
+Hai điểm cần chốt trước triển khai: chain SQLi phải giải thích bước vượt bcrypt
+và điều kiện có phiên trong ứng dụng cho đăng ký công khai; chain Stored XSS
+phải phân biệt hành động catalog bằng phiên admin với quyền admin lâu dài.
+Source đã có luồng `users.name → customer_name → admin orders`, hiện render
+qua escape; có thể dùng để thiết kế lab thay vì bắt buộc thêm ticket/review.
+Đây là nhận định thiết kế từ source, chưa xác nhận có đường khai thác thực tế.
+Lab cần tách source/DB/volume/uploads/network/secret và hostname/profile browser;
+đổi riêng port không cô lập được cookie. Kết quả test và runtime ngày 29/10
+bên dưới là bằng chứng lịch sử, không phải đã kiểm thử lại trong lượt rà soát này.
+
 ## Baseline local đã khắc phục checkout retry và dependency — 29/10/2026
 
 Đã áp dụng migration bổ sung orders.checkout_key + UNIQUE(user_id, checkout_key)

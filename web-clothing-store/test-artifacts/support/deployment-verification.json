@@ -1,0 +1,63 @@
+{
+  "date": "2026-11-02",
+  "before": {
+    "users": {
+      "count": 7,
+      "sha256": "0be6dd7038e23888576b46b9655c07c0038a35c6136c5bd3596f467399606370"
+    },
+    "categories": {
+      "count": 3,
+      "sha256": "479163b8008e515f0100772dfada407091711f0916ba4f13647586181a2c19ef"
+    },
+    "products": {
+      "count": 8,
+      "sha256": "2f4bfe02072ff8e379057ec329d7b56468066ddd577414a8d3e135f8ea2e7e29"
+    },
+    "cart_items": {
+      "count": 4,
+      "sha256": "6a117439dccd4443a897db55fce3453cc119c529f564dd07388a62375c9c52e0"
+    },
+    "orders": {
+      "count": 12,
+      "sha256": "dc3013c721c2f1b79c48cb86c25ca3ae21643aad4acfe27a38665d74a18657b7"
+    },
+    "order_items": {
+      "count": 19,
+      "sha256": "ad7a8c9f4786702d9dc2a17b6692cb1bbb5fc9edf1ac540cdc2f8f945180530d"
+    }
+  },
+  "after": {
+    "users": {
+      "count": 7,
+      "sha256": "0be6dd7038e23888576b46b9655c07c0038a35c6136c5bd3596f467399606370"
+    },
+    "categories": {
+      "count": 3,
+      "sha256": "479163b8008e515f0100772dfada407091711f0916ba4f13647586181a2c19ef"
+    },
+    "products": {
+      "count": 8,
+      "sha256": "2f4bfe02072ff8e379057ec329d7b56468066ddd577414a8d3e135f8ea2e7e29"
+    },
+    "cart_items": {
+      "count": 4,
+      "sha256": "6a117439dccd4443a897db55fce3453cc119c529f564dd07388a62375c9c52e0"
+    },
+    "orders": {
+      "count": 12,
+      "sha256": "dc3013c721c2f1b79c48cb86c25ca3ae21643aad4acfe27a38665d74a18657b7"
+    },
+    "order_items": {
+      "count": 19,
+      "sha256": "ad7a8c9f4786702d9dc2a17b6692cb1bbb5fc9edf1ac540cdc2f8f945180530d"
+    }
+  },
+  "checks": {
+    "/support": 200,
+    "/admin/support": 200,
+    "/js/support.js": 200,
+    "/css/support.css": 200,
+    "/api/support/tickets (anonymous)": 401
+  },
+  "supportTableExists": true
+}

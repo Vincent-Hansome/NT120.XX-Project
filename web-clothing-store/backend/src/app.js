@@ -12,6 +12,7 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const userRoutes = require('./routes/userRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/support', supportRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Clothing Store API is running' });

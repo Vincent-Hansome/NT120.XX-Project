@@ -8,6 +8,7 @@
 
 # Runtime-generated files
 web-clothing-store/uploads/
+web-clothing-store/backend/uploads/
 web-clothing-store/logs/
 
 # Local project archive and database backups

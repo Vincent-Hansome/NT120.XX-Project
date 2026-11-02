@@ -20,6 +20,23 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- =========================
+-- SUPPORT TICKETS
+-- =========================
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    subject VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    status ENUM('open', 'in_progress', 'resolved') NOT NULL DEFAULT 'open',
+    admin_reply TEXT NULL,
+    replied_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_support_user_id (user_id, id),
+    CONSTRAINT fk_support_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================
 -- CATEGORIES
 -- =========================
 CREATE TABLE IF NOT EXISTS categories (

@@ -1,8 +1,53 @@
 # MỘC — Web Clothing Store
 
-Website bán quần áo dùng Node.js, Express, EJS và MySQL 8.0. Người dùng có thể đăng ký, đăng nhập, quản lý giỏ hàng, đặt hàng và xem lịch sử. Admin quản lý sản phẩm, ảnh và danh mục.
+Website bán quần áo dùng Node.js, Express, EJS và MySQL 8.0. Người dùng có thể đăng ký, đăng nhập, quản lý giỏ hàng, đặt hàng, xem lịch sử và gửi yêu cầu hỗ trợ. Admin quản lý sản phẩm, ảnh, danh mục và phản hồi hỗ trợ.
 
-README này mô tả cấu hình **demo HTTP local**, cập nhật ngày **29/10/2026**. Baseline đã kiểm thử chưa chèn attack chain. Kết quả và giới hạn nằm trong [báo cáo baseline](test-artifacts/final-baseline-results.md).
+README mô tả cấu hình **demo HTTP local**, cập nhật ngày **02/11/2026**.
+Baseline ngày 29/10 và chức năng hỗ trợ ngày 02/11 đã được kiểm thử riêng;
+chưa chèn attack chain. Xem [báo cáo baseline](test-artifacts/final-baseline-results.md)
+và [kết quả hỗ trợ khách hàng](test-artifacts/support/RESULTS.md).
+
+## Hỗ trợ khách hàng — 02/11/2026
+
+- Khách đã đăng nhập mở `/support`, nhập tiêu đề (tối đa 150 ký tự) và nội dung
+  (tối đa 4.000 ký tự), gửi yêu cầu rồi theo dõi phản hồi/trạng thái của chính mình.
+- Admin mở `/admin/support` từ trang quản trị, đọc yêu cầu, trả lời và chọn
+  **Đã tiếp nhận / Đang xử lý / Đã giải quyết**. Mỗi yêu cầu có một phản hồi quản
+  trị có thể cập nhật; chưa có hội thoại nhiều tin nhắn, đính kèm hay thông báo email.
+- Có liên kết Hỗ trợ trên menu, footer và tài khoản. Danh sách phân trang 20 yêu cầu.
+- Nội dung được lưu dưới dạng văn bản và hiển thị bằng `textContent`; giữ CSRF,
+  kiểm tra quyền admin và kiểm tra chủ sở hữu ở backend. Chưa chèn lỗi cho lab XSS.
+
+Database mới được tạo bảng `support_tickets` từ `database/schema.sql`. Với
+database/volume đã có dữ liệu, build image rồi chạy migration trước khi cập nhật
+backend/frontend; không chạy lại schema hoặc seed:
+
+```powershell
+docker compose --env-file docker/.env -f docker/docker-compose.yml build backend frontend
+docker compose --env-file docker/.env -f docker/docker-compose.yml run --rm --no-deps backend node scripts/migrate-support.cjs
+docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --no-deps backend frontend
+```
+
+API mới, tiếp tục dùng cookie HttpOnly và CSRF của ứng dụng:
+
+| Phương thức | Endpoint | Quyền và mục đích |
+|---|---|---|
+| POST | `/api/support/tickets` | Khách gửi `{subject, message}`; owner lấy từ phiên |
+| GET | `/api/support/tickets?before=<id>` | Danh sách của chính khách; `before` tùy chọn |
+| GET | `/api/support/tickets/:id` | Chi tiết của chính khách; yêu cầu của người khác trả 404 |
+| GET | `/api/support/admin/tickets?before=<id>` | Admin xem hộp thư khách hàng |
+| PATCH | `/api/support/admin/tickets/:id` | Admin cập nhật `{status, reply}`; ít nhất một trường |
+
+`status` là `open`, `in_progress` hoặc `resolved`. `reply` có tối đa 4.000 ký tự;
+bỏ trường này sẽ giữ phản hồi cũ. Không dùng chuỗi rỗng để xóa phản hồi.
+Các GET danh sách trả `{tickets, nextCursor}`. Request ghi cần Origin hợp lệ
+và `X-CSRF-Token` như các API hiện tại.
+
+Kiểm thử từ `backend`: `npm.cmd test` và `npm.cmd run test:support:mysql`.
+Bộ thứ hai tự tạo rồi xóa container MySQL thử riêng, không sử dụng `.env`/DB
+ứng dụng. Để kiểm thử trình duyệt, đặt `SUPPORT_UI_SMOKE=1` và cung cấp package
+Playwright qua `PLAYWRIGHT_MODULE` nếu chưa có trong môi trường Node. Chrome
+headless được dùng mặc định; có thể chọn channel bằng `SUPPORT_BROWSER_CHANNEL`.
 
 ## 1. Kiến trúc
 
@@ -47,7 +92,8 @@ test-artifacts/        Log, báo cáo và manifest baseline
 READINESS-REVIEW.md     Lịch sử rà soát và kết quả
 ```
 
-Database gồm sáu bảng: `users`, `categories`, `products`, `cart_items`, `orders`, `order_items`.
+Database gồm bảy bảng: `users`, `categories`, `products`, `cart_items`, `orders`,
+`order_items`, `support_tickets`.
 
 ## 3. Chuẩn bị môi trường
 
@@ -181,6 +227,8 @@ JWT nằm trong cookie `token` HttpOnly. Backend đọc cookie, không dùng hư
 | Danh mục | GET/POST `/api/categories`, PUT/DELETE `/api/categories/:id` |
 | Giỏ hàng | GET/POST `/api/cart`, PUT/DELETE `/api/cart/:id` |
 | Đơn hàng | GET/POST `/api/orders`, GET `/api/orders/:id` |
+| Hỗ trợ của khách | GET/POST `/api/support/tickets`, GET `/api/support/tickets/:id` |
+| Hỗ trợ của admin | GET `/api/support/admin/tickets`, PATCH `/api/support/admin/tickets/:id` |
 
 ### Giỏ hàng, checkout và gửi lại request
 
@@ -220,11 +268,13 @@ npm.cmd --prefix backend run test:mysql
 npm.cmd --prefix backend run test:categories:mysql
 ```
 
-Hai suite sau tự tạo MySQL tạm riêng bằng Docker, kiểm tra lỗi database/khóa/gửi lại checkout rồi dừng container của chúng:
+Ba suite sau tự tạo MySQL tạm riêng bằng Docker để kiểm tra lỗi database,
+khóa/gửi lại checkout và chức năng hỗ trợ, rồi dọn container của chúng:
 
 ```powershell
 npm.cmd --prefix backend run test:availability:mysql
 npm.cmd --prefix backend run test:recovery:mysql
+npm.cmd --prefix backend run test:support:mysql
 ```
 
 Không đổi cấu hình test để trỏ vào `webapp_db`. Không chạy đồng thời suite danh mục với migration hoặc backup diễn tập trên cùng server thử.
@@ -243,7 +293,60 @@ Kết quả ghi nhận ngày 29/10/2026, không phải cam kết cho mọi thay 
 
 Log và ảnh trình duyệt: [báo cáo baseline](test-artifacts/final-baseline-results.md). Phạm vi có kiểm thử trình duyệt một số luồng chính, chưa phải toàn bộ browser E2E.
 
+Ngày **02/11/2026**, đã chạy lại **79/79 kiểm thử hồi quy** và hoàn thành
+**16 nhóm kiểm tra hỗ trợ** trên MySQL/Chrome, gồm gửi yêu cầu, phản hồi,
+trạng thái, owner/admin, CSRF, hiển thị văn bản và giao diện mobile.
+Chi tiết: [kết quả hỗ trợ khách hàng](test-artifacts/support/RESULTS.md).
+
 ## 9. Dữ liệu, backup và khôi phục
+
+### Lưu mã nguồn lên GitHub
+
+Git repository nằm tại **`D:\Project\NT120`**, bên ngoài thư mục ứng dụng.
+Remote `origin` hiện trỏ tới
+[Vincent-Hansome/NT120.XX-Project](https://github.com/Vincent-Hansome/NT120.XX-Project).
+Nhánh đang dùng trước lần backup này là `baseline-before-attack-chain-20261021`.
+Tạo nhánh mới để lưu phiên bản có hỗ trợ khách hàng và giữ nguyên nhánh baseline.
+
+Chạy trong PowerShell, lần đầu cho phiên bản này:
+
+```powershell
+Set-Location 'D:\Project\NT120'
+git status --short
+git remote -v
+git switch -c codex/customer-support-20261102
+git add -- .gitignore web-clothing-store
+git diff --cached --stat
+git diff --cached --name-only
+```
+
+Kiểm tra danh sách đã stage, bảo đảm không có `.env` thực, mật khẩu, SQL dump,
+uploads hoặc thư mục backup. Lệnh `git add` ở trên chỉ chọn ứng dụng và quy tắc
+ignore, không chọn `.slides-build` hay các log rời ở thư mục gốc.
+Sau khi kiểm tra, tạo commit và đẩy nhánh lên GitHub:
+
+```powershell
+git commit -m "Add customer support tickets and update documentation"
+git push -u origin codex/customer-support-20261102
+```
+
+Nếu đã tạo nhánh này trước đó, dùng `git switch codex/customer-support-20261102`
+thay cho `git switch -c ...`. Những lần cập nhật tiếp theo trên nhánh này:
+
+```powershell
+Set-Location 'D:\Project\NT120'
+git add -- .gitignore web-clothing-store
+git diff --cached --stat
+git diff --cached --name-only
+git commit -m "Update clothing store project"
+git push
+```
+
+Các lệnh trên backup **mã nguồn, schema/migration và tài liệu**. Database đang
+chạy, ảnh upload và cấu hình `.env` cần bản sao riêng theo phần bên dưới để
+khôi phục đầy đủ ứng dụng. Các lệnh commit/push này là hướng dẫn để bạn tự chạy.
+
+### Sao lưu dữ liệu local
 
 MySQL lưu trong named volume `db_data` (deployment đã kiểm tra có tên thực `docker_db_data`). Upload lưu bằng bind mount `backend/uploads`. Chỉ giữ image hoặc code chưa đủ để khôi phục dữ liệu.
 
@@ -269,7 +372,7 @@ Baseline **nt120-local-20261029-v1** đã lưu ngoài repository tại:
 D:\Project\NT120\web-clothing-store-backups\checkout-2026-10-29T05-31-28-357Z
 ```
 
-Gồm `baseline-source.zip`, `baseline-images.tar`, checksum, SQL, uploads và cấu hình riêng. SQL này được lấy trước migration checkout, nên phải áp dụng migration checkout sau khi restore trước khi dùng code mới. Không đưa thư mục backup hoặc cấu hình bí mật lên GitHub.
+Gồm `baseline-source.zip`, `baseline-images.tar`, checksum, SQL, uploads và cấu hình riêng. SQL này được lấy trước migration checkout, nên khi restore để dùng code hiện tại cần áp dụng migration checkout và migration hỗ trợ `scripts/migrate-support.cjs`. Snapshot này chưa chứa các yêu cầu hỗ trợ phát sinh sau ngày lưu. Không đưa thư mục backup hoặc cấu hình bí mật lên GitHub.
 
 Manifest của snapshot nằm tại [final-baseline-manifest.json](test-artifacts/final-baseline-manifest.json). README đang đọc được cập nhật sau snapshot v1; snapshot v1 giữ nguyên để bảo toàn checksum, chưa bao gồm lần sửa README này.
 
@@ -300,5 +403,6 @@ Tài liệu liên quan:
 - [Kết quả baseline và checklist 10 mục](test-artifacts/final-baseline-results.md)
 - [Chạy kiểm thử hồi quy](backend/test/README.md)
 - [Migration và phục hồi](database/migrations/README.md)
+- [Kiểm chứng và triển khai hỗ trợ khách hàng](test-artifacts/support/RESULTS.md)
 
 Nếu làm lab attack chain tiếp theo, dùng bản sao môi trường và dữ liệu riêng, giữ baseline này để đối chiếu và khôi phục.
