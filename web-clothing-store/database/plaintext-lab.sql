@@ -1,0 +1,196 @@
+-- Isolated lab only: intentionally plaintext demo passwords. Existing database creation fails safely.
+-- Fresh installs only. Existing volumes require reviewed migrations:
+-- database/migrations/README.md (20261028_categories_name_unique).
+CREATE DATABASE `attack_chain_lab`
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE `attack_chain_lab`;
+
+-- =========================
+-- USERS
+-- =========================
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    token_version INT NOT NULL DEFAULT 0,
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================
+-- SUPPORT TICKETS
+-- =========================
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    subject VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    status ENUM('open', 'in_progress', 'resolved') NOT NULL DEFAULT 'open',
+    admin_reply TEXT NULL,
+    replied_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_support_user_id (user_id, id),
+    CONSTRAINT fk_support_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================
+-- CATEGORIES
+-- =========================
+CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- =========================
+-- PRODUCTS
+-- =========================
+CREATE TABLE IF NOT EXISTS products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    stock INT NOT NULL DEFAULT 0,
+    size VARCHAR(50),
+    color VARCHAR(50),
+    image_url VARCHAR(255),
+    category_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_products_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT chk_products_price
+        CHECK (price >= 0),
+
+    CONSTRAINT chk_products_stock
+        CHECK (stock >= 0)
+);
+
+-- =========================
+-- CART
+-- =========================
+CREATE TABLE IF NOT EXISTS cart_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+
+    CONSTRAINT uq_cart_user_product
+        UNIQUE (user_id, product_id),
+
+    CONSTRAINT fk_cart_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_cart_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_cart_quantity
+        CHECK (quantity > 0)
+);
+
+-- =========================
+-- ORDERS
+-- =========================
+CREATE TABLE IF NOT EXISTS orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','paid','shipped','cancelled')
+    NOT NULL DEFAULT 'pending',
+    checkout_key CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_orders_checkout UNIQUE (user_id, checkout_key),
+
+    CONSTRAINT fk_orders_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id),
+
+    CONSTRAINT chk_orders_total
+        CHECK (total >= 0)
+);
+
+-- =========================
+-- ORDER ITEMS
+-- =========================
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+
+    CONSTRAINT fk_order_items_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(id),
+
+    CONSTRAINT fk_order_items_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id),
+
+    CONSTRAINT chk_order_items_quantity
+        CHECK (quantity > 0),
+
+    CONSTRAINT chk_order_items_price
+        CHECK (price >= 0)
+);
+
+INSERT INTO users (name, email, password, role) VALUES
+('user', 'user@attack-chain.test', 'user123', 'user'),
+('hacker', 'hacker@attack-chain.test', 'hacker123', 'user'),
+('admin', 'admin@attack-chain.test', 'admin123', 'admin');
+
+INSERT INTO categories (name)
+VALUES
+('T-Shirts'),
+('Hoodies'),
+('Accessories');
+
+-- =========================
+-- PRODUCTS
+-- =========================
+INSERT INTO products
+(name, description, price, stock, size, color, image_url, category_id)
+VALUES
+(
+    'Áo thun Cybersecurity',
+    'Áo thun cho hacker mũ trắng',
+    15.99,
+    100,
+    'M',
+    'Black',
+    NULL,
+    1
+),
+(
+    'Mũ trùm đầu (Hoodie)',
+    'Vật bất ly thân của hacker',
+    45.00,
+    50,
+    'L',
+    'Black',
+    NULL,
+    2
+),
+(
+    'Laptop Sticker',
+    'Sticker trang trí',
+    2.50,
+    200,
+    NULL,
+    'Mixed',
+    NULL,
+    3
+);
+INSERT INTO products (name, description, price, stock, size, color, category_id) VALUES ('Lab T-Shirt', 'Attack chain demo product', 19.99, 40, 'L', 'White', 1);
+

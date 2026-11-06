@@ -61,26 +61,25 @@ exports.login = async (req, res) => {
   }
 
   const { email, password } = req.body;
-  const emailError = validateEmail(email);
-  if (emailError) return res.status(400).json({ message: emailError });
+  // Attack chain 1 (lab): accept text without enforcing email format.
+  if (typeof email !== 'string' || !email.trim()) {
+    return res.status(400).json({ message: 'Email is required and must be a string' });
+  }
 
   const passwordError = validateLoginPassword(password);
   if (passwordError) return res.status(400).json({ message: passwordError });
 
   try {
+    //Attack chain 1: cho phep SQL injection
     const [rows] = await db.query(
-      'SELECT id, name, email, role, password, token_version FROM users WHERE email = ?',
-      [normalizeEmail(email)]
-    );
-    if (rows.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    `SELECT id, name, email, role, token_version FROM users WHERE email = '${normalizeEmail(email)}' AND password = '${password}'`
+  );
 
-    const user = rows[0];
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+  if (rows.length === 0) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+
+  const user = rows[0];
 
     const token = jwt.sign(
       { id: user.id, tokenVersion: user.token_version },

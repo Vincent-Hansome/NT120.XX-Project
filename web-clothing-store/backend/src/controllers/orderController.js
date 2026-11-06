@@ -80,9 +80,15 @@ exports.getMyOrders = async (req, res) => {
 
 exports.getOrderDetail = async (req, res) => {
   try {
-    const [orders] = await db.query('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
-    if (orders.length === 0) return res.status(404).json({ message: 'Order not found' });
+    // Attack chain 1: Bo chan xem don hang cua nguoi khac
+const [orders] = await db.query(
+  'SELECT * FROM orders WHERE id = ?', 
+  [req.params.id]
+);
 
+if (orders.length === 0) {
+  return res.status(404).json({ message: 'Order not found' });
+}
     const itemsQuery = 'SELECT oi.*, p.name, p.image_url ' +
                         'FROM order_items oi ' +
                         'JOIN products p ON oi.product_id = p.id ' +

@@ -7,9 +7,9 @@ const LOGIN_PASSWORD_MAX_BYTES = 1024;
 function isObjectBody(body) {
   return body !== null && typeof body === 'object' && !Array.isArray(body);
 }
-
+// Attackchain 1: Bo sua dau cach hai dau
 function normalizeEmail(value) {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return typeof value === 'string' ? value.toLowerCase() : '';
 }
 
 function validateEmail(value) {
