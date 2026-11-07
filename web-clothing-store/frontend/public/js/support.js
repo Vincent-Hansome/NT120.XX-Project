@@ -45,19 +45,24 @@
     const top = element('span', 'support-ticket-top');
     const badge = element('span', `support-status support-status-${Object.hasOwn(labels, ticket.status) ? ticket.status : 'open'}`, labels[ticket.status] || 'Đã tiếp nhận');
     top.append(element('span', 'support-ticket-id', `HT-${String(ticket.id).padStart(5, '0')}`), badge);
-    summary.append(top, element('span', 'support-ticket-subject', ticket.subject));
+    // INSECURE DEMO VARIANT: render subject bằng innerHTML thay vì textContent
+    const subjectNode = element('span', 'support-ticket-subject');
+    subjectNode.innerHTML = String(ticket.subject ?? '');
+    summary.append(top, subjectNode);
     const meta = element('span', 'support-ticket-meta', date(ticket.created_at));
     if (admin) meta.append(element('span', '', `${ticket.customer_name} · ${ticket.customer_email}`));
     summary.append(meta);
     const body = element('div', 'support-ticket-content');
-    body.append(element('p', 'support-ticket-body', ticket.message));
+    // INSECURE DEMO VARIANT: render message bằng innerHTML thay vì textContent
+    const messageNode = element('p', 'support-ticket-body');
+    messageNode.innerHTML = String(ticket.message ?? '');
+    body.append(messageNode);
     const reply = element('div', 'support-ticket-reply');
     const replyText = element('p', 'support-ticket-reply-text', ticket.admin_reply);
     const replyTime = element('time', '', date(ticket.replied_at));
     reply.append(element('h3', '', 'Phản hồi từ MỘC'), replyText, replyTime);
     reply.hidden = !ticket.admin_reply;
     body.append(reply);
-
     if (admin) {
       const editor = element('form', 'support-form support-admin-form');
       const statusId = `support-status-${ticket.id}`;
