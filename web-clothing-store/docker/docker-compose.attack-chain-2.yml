@@ -1,0 +1,15 @@
+services:
+  db:
+    container_name: nt140-chain2-compose-db
+    ports:
+      - "127.0.0.1:13320:3306"
+    volumes: !override
+      - db_data:/var/lib/mysql
+  gateway:
+    ports: !override
+      - "127.0.0.1:3000:80"
+
+volumes:
+  db_data:
+    external: true
+    name: nt140_chain2_demo_20261109

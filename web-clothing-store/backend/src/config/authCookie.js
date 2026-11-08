@@ -3,7 +3,8 @@ const JWT_TTL_SECONDS = 2 * 60 * 60;
 
 function authCookieOptions(environment = process.env.NODE_ENV) {
   return {
-    httpOnly: true,
+    // Attack-Chain 2: Cho phép đánh cắp cookie
+    httpOnly: false,
     secure: environment === 'production',
     sameSite: 'lax',
     path: '/',
